@@ -2,24 +2,45 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+app.use(cors({ origin: "*" }));
 
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: { origin: "*" }
 });
 
+// Инициализация базы данных SQLite
+const dbPath = path.resolve(__dirname, 'database.sqlite');
+const db = new sqlite3.Database(dbPath, (err) => {
+    if (err) {
+        console.error('Ошибка подключения к базы данных SQLite:', err.message);
+    } else {
+        console.log('Успешно подключено к базе данных SQLite');
+    }
+});
+
+// Создаем таблицу пользователей
+db.serialize(() => {
+    db.run(`
+        CREATE TABLE IF NOT EXISTS users (
+            telegramId TEXT PRIMARY KEY,
+            username TEXT,
+            stars INTEGER DEFAULT 25,
+            inventory TEXT DEFAULT '[]'
+        )
+    `);
+});
+
 app.get('/', (req, res) => {
     res.send('Server is running');
 });
 
-// Простая база данных в памяти для защиты от абуза стартовых звезд и синхронизации
-const usersDB = {};
-
-// Эндпоинт для авторизации и выдачи 25 стартовых звезд ровно 1 раз
+// Защищенная авторизация и выгрузка данных
 app.post('/api/login', (req, res) => {
     const { telegramId, username } = req.body;
 
@@ -27,23 +48,49 @@ app.post('/api/login', (req, res) => {
         return res.status(400).json({ error: 'Telegram ID обязателен' });
     }
 
-    // Если игрока еще нет в базе — создаем профиль и начисляем 25 звезд
-    if (!usersDB[telegramId]) {
-        usersDB[telegramId] = {
-            telegramId: telegramId,
-            username: username || 'Игрок',
-            stars: 25,
-            inventory: [],
-            createdAt: Date.now()
-        };
-        console.log(`Создан новый защищенный пользователь: ${telegramId} (${username})`);
-    }
+    db.get('SELECT * FROM users WHERE telegramId = ?', [telegramId.toString()], (err, row) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ error: 'Ошибка базы данных' });
+        }
 
-    // Возвращаем актуальные данные игрока
-    res.json(usersDB[telegramId]);
+        if (row) {
+            let inventoryArr = [];
+            try {
+                inventoryArr = JSON.parse(row.inventory);
+            } catch (e) {
+                inventoryArr = [];
+            }
+            return res.json({
+                telegramId: row.telegramId,
+                username: row.username,
+                stars: row.stars,
+                inventory: inventoryArr
+            });
+        } else {
+            const defaultStars = 25;
+            const defaultInventory = JSON.stringify([]);
+
+            db.run(
+                'INSERT INTO users (telegramId, username, stars, inventory) VALUES (?, ?, ?, ?)',
+                [telegramId.toString(), username || 'Игрок', defaultStars, defaultInventory],
+                function (insertErr) {
+                    if (insertErr) {
+                        console.error(insertErr);
+                        return res.status(500).json({ error: 'Ошибка создания пользователя' });
+                    }
+                    return res.json({
+                        telegramId: telegramId.toString(),
+                        username: username || 'Игрок',
+                        stars: defaultStars,
+                        inventory: []
+                    });
+                }
+            );
+        }
+    });
 });
 
-// Список подарков для дуэлей
 const giftsData = [
     { name: "Ничего", icon: "❌", price: 0 },
     { name: "Сердце", icon: "💖", price: 15 },
@@ -121,7 +168,7 @@ io.on('connection', (socket) => {
 
                     waitingPlayer = null;
                 }
-            }, 10000);
+            }, 3000);
         }
     });
 
