@@ -19,7 +19,22 @@ app.get('/', (req, res) => {
 // Простая база данных в памяти для хранения профилей пользователей
 const usersDB = {};
 
-// Эндпоинт для авторизации и первичного получения данных пользователя
+const BOT_TOKEN = '8785252023:AAGZxbwKiLDG-snqVMHjhDXabXAzoo3c75Q';
+
+// Список подарков с официальными gift_id из Telegram API
+const giftsData = [
+    { name: "Ничего", icon: "❌", price: 0, giftId: null },
+    { name: "Сердце", icon: "💖", price: 15, giftId: "5170145012310081615" },
+    { name: "Мишка", icon: "🧸", price: 15, giftId: "5170233102089322756" },
+    { name: "Подарочек", icon: "🎁", price: 25, giftId: "5170250947678437525" },
+    { name: "Букет", icon: "💐", price: 25, giftId: "5168103777563050263" },
+    { name: "Шампанское", icon: "🍾", price: 50, giftId: "6028601630662853006" },
+    { name: "Ракета", icon: "🚀", price: 50, giftId: "5170564780938756245" },
+    { name: "Бриллиант", icon: "💎", price: 100, giftId: "5170521118301225164" },
+    { name: "Кольцо", icon: "💍", price: 100, giftId: "5170690322832818290" }
+];
+
+// Авторизация и получение данных игрока
 app.post('/api/login', (req, res) => {
     const { telegramId, username } = req.body;
 
@@ -35,7 +50,7 @@ app.post('/api/login', (req, res) => {
             inventory: [],
             createdAt: Date.now()
         };
-        console.log(`Создан новый защищенный пользователь: ${telegramId} (${username})`);
+        console.log(`Создан новый пользователь: ${telegramId} (${username})`);
     } else if (username && usersDB[telegramId].username !== username) {
         usersDB[telegramId].username = username;
     }
@@ -43,7 +58,7 @@ app.post('/api/login', (req, res) => {
     res.json(usersDB[telegramId]);
 });
 
-// Эндпоинт для сохранения текущего баланса звезд пользователя
+// Обновление звезд
 app.post('/api/update-stars', (req, res) => {
     const { telegramId, stars } = req.body;
 
@@ -66,7 +81,7 @@ app.post('/api/update-stars', (req, res) => {
     }
 });
 
-// Эндпоинт для сохранения инвентаря пользователя
+// Обновление инвентаря
 app.post('/api/update-inventory', (req, res) => {
     const { telegramId, inventory } = req.body;
 
@@ -89,11 +104,7 @@ app.post('/api/update-inventory', (req, res) => {
     }
 });
 
-// ==========================================
-// НОВЫЙ ЭНДПОИНТ: Создание инвойса Telegram Stars
-// ==========================================
-const BOT_TOKEN = '8785252023:AAGZxbwKiLDG-snqVMHjhDXabXAzoo3c75Q';
-
+// Создание инвойса на оплату
 app.post('/api/create-invoice', async (req, res) => {
     const { telegramId, starsAmount } = req.body;
 
@@ -104,7 +115,7 @@ app.post('/api/create-invoice', async (req, res) => {
     const title = `Пополнение баланса на ${starsAmount} ⭐`;
     const description = `Покупка игровой валюты в Gift Case Game`;
     const payload = JSON.stringify({ telegramId, starsAmount });
-    const currency = 'XTR'; // Официальная валюта Telegram Stars
+    const currency = 'XTR';
     const prices = [{ label: `${starsAmount} Звезд`, amount: parseInt(starsAmount) }];
 
     try {
@@ -133,19 +144,65 @@ app.post('/api/create-invoice', async (req, res) => {
     }
 });
 
-// Список подарков для дуэлей
-const giftsData = [
-    { name: "Ничего", icon: "❌", price: 0 },
-    { name: "Сердце", icon: "💖", price: 15 },
-    { name: "Мишка", icon: "🧸", price: 15 },
-    { name: "Подарочек", icon: "🎁", price: 25 },
-    { name: "Букет", icon: "💐", price: 25 },
-    { name: "Шампанское", icon: "🍾", price: 50 },
-    { name: "Ракета", icon: "🚀", price: 50 },
-    { name: "Бриллиант", icon: "💎", price: 100 },
-    { name: "Кольцо", icon: "💍", price: 100 }
-];
+// Автоматический вывод подарка через sendGift
+app.post('/api/withdraw-gift', async (req, res) => {
+    const { telegramId, itemIndex } = req.body;
 
+    if (!telegramId || itemIndex === undefined) {
+        return res.status(400).json({ error: 'Не указан Telegram ID или индекс предмета' });
+    }
+
+    if (!usersDB[telegramId] || !usersDB[telegramId].inventory) {
+        return res.status(400).json({ error: 'Пользователь или инвентарь не найден' });
+    }
+
+    const userInventory = usersDB[telegramId].inventory;
+
+    if (itemIndex < 0 || itemIndex >= userInventory.length) {
+        return res.status(400).json({ error: 'Предмет не найден в инвентаре' });
+    }
+
+    const itemToWithdraw = userInventory[itemIndex];
+
+    // Определение gift_id предметов
+    let targetGiftId = itemToWithdraw.giftId;
+    if (!targetGiftId) {
+        const found = giftsData.find(g => g.name === itemToWithdraw.name);
+        if (found) targetGiftId = found.giftId;
+    }
+
+    if (!targetGiftId) {
+        return res.status(400).json({ error: 'Этот предмет не поддерживает автоматический вывод' });
+    }
+
+    try {
+        const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendGift`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: parseInt(telegramId),
+                gift_id: targetGiftId
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.ok) {
+            userInventory.splice(itemIndex, 1);
+            res.json({ success: true, inventory: userInventory });
+        } else {
+            console.error('Telegram sendGift Error:', data);
+            res.status(400).json({ 
+                error: data.description || 'Не удалось отправить подарок. Проверьте баланс звезд у бота и запустил ли пользователь бота в ЛС.' 
+            });
+        }
+    } catch (e) {
+        console.error('Withdraw server error:', e);
+        res.status(500).json({ error: 'Внутренняя ошибка сервера при выводе' });
+    }
+});
+
+// Socket.IO Логика дуэлей
 let waitingPlayer = null;
 let queueTimer = null;
 
