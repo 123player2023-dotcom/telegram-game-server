@@ -27,7 +27,6 @@ app.post('/api/login', (req, res) => {
         return res.status(400).json({ error: 'Telegram ID обязателен' });
     }
 
-    // Если игрока еще нет в базе — создаем профиль и начисляем 25 стартовых звезд
     if (!usersDB[telegramId]) {
         usersDB[telegramId] = {
             telegramId: telegramId,
@@ -41,7 +40,6 @@ app.post('/api/login', (req, res) => {
         usersDB[telegramId].username = username;
     }
 
-    // Возвращаем актуальные данные игрока
     res.json(usersDB[telegramId]);
 });
 
@@ -55,7 +53,6 @@ app.post('/api/update-stars', (req, res) => {
 
     if (usersDB[telegramId]) {
         usersDB[telegramId].stars = stars;
-        console.log(`Обновлен баланс для ${telegramId}: ${stars} ⭐`);
         return res.json({ success: true, stars: usersDB[telegramId].stars });
     } else {
         usersDB[telegramId] = {
@@ -89,6 +86,50 @@ app.post('/api/update-inventory', (req, res) => {
             createdAt: Date.now()
         };
         return res.json({ success: true, inventory: usersDB[telegramId].inventory });
+    }
+});
+
+// ==========================================
+// НОВЫЙ ЭНДПОИНТ: Создание инвойса Telegram Stars
+// ==========================================
+const BOT_TOKEN = '8785252023:AAGZxbwKiLDG-snqVMHjhDXabXAzoo3c75Q';
+
+app.post('/api/create-invoice', async (req, res) => {
+    const { telegramId, starsAmount } = req.body;
+
+    if (!telegramId || !starsAmount) {
+        return res.status(400).json({ error: 'Не указан Telegram ID или сумма звезд' });
+    }
+
+    const title = `Пополнение баланса на ${starsAmount} ⭐`;
+    const description = `Покупка игровой валюты в Gift Case Game`;
+    const payload = JSON.stringify({ telegramId, starsAmount });
+    const currency = 'XTR'; // Официальная валюта Telegram Stars
+    const prices = [{ label: `${starsAmount} Звезд`, amount: parseInt(starsAmount) }];
+
+    try {
+        const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/createInvoiceLink`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                title,
+                description,
+                payload,
+                currency,
+                prices
+            })
+        });
+
+        const data = await response.json();
+        if (data.ok) {
+            res.json({ invoiceLink: data.result });
+        } else {
+            console.error('Telegram API Error:', data);
+            res.status(400).json({ error: data.description || 'Ошибка создания счета в Telegram' });
+        }
+    } catch (e) {
+        console.error('Invoice creation error:', e);
+        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
     }
 });
 
