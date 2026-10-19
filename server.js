@@ -1,5 +1,5 @@
 const express = require('express');
-const http = http = require('http');
+const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 
@@ -90,7 +90,7 @@ app.post('/api/update-inventory', (req, res) => {
 });
 
 // ==========================================
-// ОБНОВЛЕННЫЙ ТОКЕН НОВОГО БОТА
+// ТОКЕН НОВОГО БОТА
 // ==========================================
 const BOT_TOKEN = '8661865774:AAFKJ3kSDPKA_dlSXxKmzNwvdJT7u9gUtxY';
 
