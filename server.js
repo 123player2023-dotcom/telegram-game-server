@@ -19,7 +19,7 @@ app.get('/', (req, res) => {
 // Простая база данных в памяти для хранения профилей пользователей
 const usersDB = {};
 
-// Эндпоинт для авторизации и первичного получения данных пользователя
+// Эндпоинт для авторизации и первичного получения данных пользователя (теперь старт с 0 звезд)
 app.post('/api/login', (req, res) => {
     const { telegramId, username } = req.body;
 
@@ -31,11 +31,11 @@ app.post('/api/login', (req, res) => {
         usersDB[telegramId] = {
             telegramId: telegramId,
             username: username || 'Игрок',
-            stars: 25,
+            stars: 0, // Убраны начальные 25 звезд
             inventory: [],
             createdAt: Date.now()
         };
-        console.log(`Создан новый защищенный пользователь: ${telegramId} (${username})`);
+        console.log(`Создан новый пользователь с 0 звезд: ${telegramId} (${username})`);
     } else if (username && usersDB[telegramId].username !== username) {
         usersDB[telegramId].username = username;
     }
@@ -48,7 +48,7 @@ app.post('/api/update-stars', (req, res) => {
     const { telegramId, stars } = req.body;
 
     if (!telegramId || stars === undefined) {
-        return res.status(400).json({ error: 'Telegram ID и количество звезд обязательны' });
+        return res.status(400).json({ error: 'Telegram ID и количество звезд обязательные' });
     }
 
     if (usersDB[telegramId]) {
@@ -71,7 +71,7 @@ app.post('/api/update-inventory', (req, res) => {
     const { telegramId, inventory } = req.body;
 
     if (!telegramId || !Array.isArray(inventory)) {
-        return res.status(400).json({ error: 'Telegram ID и инвентарь обязательны' });
+        return res.status(400).json({ error: 'Telegram ID и инвентарь обязательные' });
     }
 
     if (usersDB[telegramId]) {
@@ -81,7 +81,7 @@ app.post('/api/update-inventory', (req, res) => {
         usersDB[telegramId] = {
             telegramId: telegramId,
             username: 'Игрок',
-            stars: 25,
+            stars: 0, // Стартовый баланс 0 звезд
             inventory: inventory,
             createdAt: Date.now()
         };
