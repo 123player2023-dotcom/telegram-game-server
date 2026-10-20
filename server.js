@@ -33,18 +33,12 @@ io.on('connection', (socket) => {
         const { username, bet } = data;
         console.log(`Игрок ${username} встал в очередь дуэли со ставкой ${bet}⭐`);
 
-        // Проверяем, есть ли уже кто-то в очереди с такой же ставкой
         const existingIndex = duelQueue.findIndex(item => item.bet === bet && item.socketId !== socket.id);
 
         if (existingIndex !== -1) {
-            // Нашли соперника!
             const opponent = duelQueue.splice(existingIndex, 1)[0];
-            console.لgel = `Дуэль найдена между ${username} и ${opponent.username}`;
-
-            // Генерируем результаты для обоих (случайный победитель)
             const isFirstWinner = Math.random() < 0.5;
 
-            // Генерируем подарки
             const giftsList = [
                 { name: "Ничего", icon: "❌", price: 0 },
                 { name: "Сердце", icon: "💖", price: 15 },
@@ -63,7 +57,6 @@ io.on('connection', (socket) => {
                 gift2 = giftsList[(giftsList.indexOf(gift1) + 1) % giftsList.length];
             }
 
-            // Отправляем первому игроку
             io.to(socket.id).emit('duel_started', {
                 opponentName: opponent.username,
                 isWinner: isFirstWinner,
@@ -71,7 +64,6 @@ io.on('connection', (socket) => {
                 opponentGift: isFirstWinner ? (gift1.price < gift2.price ? gift1 : gift2) : (gift1.price >= gift2.price ? gift1 : gift2)
             });
 
-            // Отправляем второму игроку
             io.to(opponent.socketId).emit('duel_started', {
                 opponentName: username,
                 isWinner: !isFirstWinner,
@@ -80,21 +72,16 @@ io.on('connection', (socket) => {
             });
 
         } else {
-            // Никого нет в очереди — добавляем игрока
             duelQueue.push({
                 socketId: socket.id,
                 username: username,
                 bet: bet
             });
 
-            // Защита от долгого ожидания: если через 5 секунд никто не нашлся, создаем бота-соперника
             setTimeout(() => {
                 const inQueue = duelQueue.find(item => item.socketId === socket.id);
                 if (inQueue) {
-                    // Убираем из очереди
                     duelQueue = duelQueue.filter(item => item.socketId !== socket.id);
-                    console.log(`Создаем бота-соперника для ${username}`);
-
                     const botNames = ["CryptoKing", "StarLord", "LuckyUser", "GiftMaster", "TonWinner"];
                     const botName = botNames[Math.floor(Math.random() * botNames.length)];
                     const isBotWinner = Math.random() < 0.5;
@@ -129,9 +116,9 @@ io.on('connection', (socket) => {
     });
 });
 
-// Обработчик команды /start с вашим приветствием и кнопкой запуска мини-приложения
-bot.onText(/\/start/, async (msg) => {
-    const chatId = msg.chat.id;
+// Правильный метод bot.start() для Telegraf
+bot.start(async (ctx) => {
+    const chatId = ctx.chat.id;
     const welcomeText = 
 `🎁 Добро пожаловать в GiveGift!
 Готов испытать удачу и прокачать свой инвентарь? Здесь каждый кейс скрывает редкие подарки и ценные награды!
@@ -144,7 +131,7 @@ bot.onText(/\/start/, async (msg) => {
 🎁 Твой первый подарок уже ждет! Нажми кнопку ниже, чтобы забрать стартовый бонус и сделать первый запуск!`;
 
     try {
-        await bot.telegram.sendPhoto(chatId, 'https://raw.githubusercontent.com/123player2023-dotcom/telegram-game/main/preview.jpg', {
+        await ctx.replyWithPhoto('https://raw.githubusercontent.com/123player2023-dotcom/telegram-game/main/preview.jpg', {
             caption: welcomeText,
             parse_mode: 'HTML',
             reply_markup: {
@@ -154,7 +141,7 @@ bot.onText(/\/start/, async (msg) => {
             }
         });
     } catch (e) {
-        await bot.sendMessage(chatId, welcomeText, {
+        await ctx.reply(welcomeText, {
             parse_mode: 'HTML',
             reply_markup: {
                 inline_keyboard: [
