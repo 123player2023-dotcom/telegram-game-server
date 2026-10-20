@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const { Telegraf } = require('telegraf');
+const http = require('http');
+const { Server } = require('socket.io');
 
 // Укажите ваш токен бота от BotFather
 const BOT_TOKEN = process.env.BOT_TOKEN || 'ВАШ_ТОКЕН_БОТА';
@@ -10,8 +12,122 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+});
+
 // База данных в памяти
 let usersDB = {};
+
+// Очередь для поиска PvP дуэлей
+let duelQueue = [];
+
+io.on('connection', (socket) => {
+    console.log('Игрок подключился по сокету:', socket.id);
+
+    socket.on('find_duel', (data) => {
+        const { username, bet } = data;
+        console.log(`Игрок ${username} встал в очередь дуэли со ставкой ${bet}⭐`);
+
+        // Проверяем, есть ли уже кто-то в очереди с такой же ставкой
+        const existingIndex = duelQueue.findIndex(item => item.bet === bet && item.socketId !== socket.id);
+
+        if (existingIndex !== -1) {
+            // Нашли соперника!
+            const opponent = duelQueue.splice(existingIndex, 1)[0];
+            console.لgel = `Дуэль найдена между ${username} и ${opponent.username}`;
+
+            // Генерируем результаты для обоих (случайный победитель)
+            const isFirstWinner = Math.random() < 0.5;
+
+            // Генерируем подарки
+            const giftsList = [
+                { name: "Ничего", icon: "❌", price: 0 },
+                { name: "Сердце", icon: "💖", price: 15 },
+                { name: "Мишка", icon: "🧸", price: 15 },
+                { name: "Подарочек", icon: "🎁", price: 25 },
+                { name: "Букет", icon: "💐", price: 25 },
+                { name: "Шампанское", icon: "🍾", price: 50 },
+                { name: "Ракета", icon: "🚀", price: 50 },
+                { name: "Бриллиант", icon: "💎", price: 100 },
+                { name: "Кольцо", icon: "💍", price: 100 }
+            ];
+
+            const gift1 = giftsList[Math.floor(Math.random() * giftsList.length)];
+            let gift2 = giftsList[Math.floor(Math.random() * giftsList.length)];
+            if (gift1.name === gift2.name) {
+                gift2 = giftsList[(giftsList.indexOf(gift1) + 1) % giftsList.length];
+            }
+
+            // Отправляем первому игроку
+            io.to(socket.id).emit('duel_started', {
+                opponentName: opponent.username,
+                isWinner: isFirstWinner,
+                myGift: isFirstWinner ? (gift1.price >= gift2.price ? gift1 : gift2) : (gift1.price < gift2.price ? gift1 : gift2),
+                opponentGift: isFirstWinner ? (gift1.price < gift2.price ? gift1 : gift2) : (gift1.price >= gift2.price ? gift1 : gift2)
+            });
+
+            // Отправляем второму игроку
+            io.to(opponent.socketId).emit('duel_started', {
+                opponentName: username,
+                isWinner: !isFirstWinner,
+                myGift: !isFirstWinner ? (gift1.price >= gift2.price ? gift1 : gift2) : (gift1.price < gift2.price ? gift1 : gift2),
+                opponentGift: !isFirstWinner ? (gift1.price < gift2.price ? gift1 : gift2) : (gift1.price >= gift2.price ? gift1 : gift2)
+            });
+
+        } else {
+            // Никого нет в очереди — добавляем игрока
+            duelQueue.push({
+                socketId: socket.id,
+                username: username,
+                bet: bet
+            });
+
+            // Защита от долгого ожидания: если через 5 секунд никто не нашлся, создаем бота-соперника
+            setTimeout(() => {
+                const inQueue = duelQueue.find(item => item.socketId === socket.id);
+                if (inQueue) {
+                    // Убираем из очереди
+                    duelQueue = duelQueue.filter(item => item.socketId !== socket.id);
+                    console.log(`Создаем бота-соперника для ${username}`);
+
+                    const botNames = ["CryptoKing", "StarLord", "LuckyUser", "GiftMaster", "TonWinner"];
+                    const botName = botNames[Math.floor(Math.random() * botNames.length)];
+                    const isBotWinner = Math.random() < 0.5;
+
+                    const giftsList = [
+                        { name: "Ничего", icon: "❌", price: 0 },
+                        { name: "Сердце", icon: "💖", price: 15 },
+                        { name: "Мишка", icon: "🧸", price: 15 },
+                        { name: "Подарочек", icon: "🎁", price: 25 },
+                        { name: "Букет", icon: "💐", price: 25 },
+                        { name: "Шампанское", icon: "🍾", price: 50 },
+                        { name: "Ракета", icon: "🚀", price: 50 }
+                    ];
+
+                    const myG = giftsList[Math.floor(Math.random() * giftsList.length)];
+                    const botG = giftsList[Math.floor(Math.random() * giftsList.length)];
+
+                    io.to(socket.id).emit('duel_started', {
+                        opponentName: botName,
+                        isWinner: isBotWinner,
+                        myGift: myG,
+                        opponentGift: botG
+                    });
+                }
+            }, 5000);
+        }
+    });
+
+    socket.on('disconnect', () => {
+        duelQueue = duelQueue.filter(item => item.socketId !== socket.id);
+        console.log('Игрок отключился:', socket.id);
+    });
+});
 
 // Обработчик команды /start с вашим приветствием и кнопкой запуска мини-приложения
 bot.onText(/\/start/, async (msg) => {
@@ -28,8 +144,6 @@ bot.onText(/\/start/, async (msg) => {
 🎁 Твой первый подарок уже ждет! Нажми кнопку ниже, чтобы забрать стартовый бонус и сделать первый запуск!`;
 
     try {
-        // Отправляем сообщение с картинкой (если вы хотите использовать фото)
-        // Замените URL картинки на прямую ссылку или отправляйте просто текст с кнопкой, если фото не нужно
         await bot.telegram.sendPhoto(chatId, 'https://raw.githubusercontent.com/123player2023-dotcom/telegram-game/main/preview.jpg', {
             caption: welcomeText,
             parse_mode: 'HTML',
@@ -40,7 +154,6 @@ bot.onText(/\/start/, async (msg) => {
             }
         });
     } catch (e) {
-        // Fallback: если фото не загрузится, отправим просто текст с кнопкой
         await bot.sendMessage(chatId, welcomeText, {
             parse_mode: 'HTML',
             reply_markup: {
@@ -57,7 +170,7 @@ app.post('/api/login', (req, res) => {
     const { telegramId, username } = req.body;
     if (!usersDB[telegramId]) {
         usersDB[telegramId] = {
-            stars: 0, // Стартовый баланс 0
+            stars: 0,
             inventory: [],
             username: username || 'Игрок'
         };
@@ -98,8 +211,8 @@ app.post('/api/create-invoice', async (req, res) => {
             title: `Пополнение ${starsAmount} ⭐`,
             description: `Покупка ${starsAmount} Telegram Stars в игре`,
             payload: JSON.stringify({ userId: telegramId, stars: parseInt(starsAmount) }),
-            provider_token: "", // ДЛЯ ЗВЕЗД ОБЯЗАТЕЛЬНО ПУСТАЯ СТРОКА!
-            currency: "XTR",     // Валюта Telegram Stars
+            provider_token: "", 
+            currency: "XTR",     
             prices: [{ label: `${starsAmount} Stars`, amount: parseInt(starsAmount) }]
         });
         res.json({ invoiceLink });
@@ -122,10 +235,7 @@ app.post('/api/withdraw-gift', (req, res) => {
     res.status(400).json({ error: 'Invalid item index' });
 });
 
-// ==========================================
-// ОБЯЗАТЕЛЬНЫЕ ОБРАБОТЧИКИ TELEGRAM STARS
-// ==========================================
-
+// Обработчики платежей Telegram Stars
 bot.on('pre_checkout_query', async (ctx) => {
     try {
         await ctx.answerPreCheckoutQuery(true);
@@ -156,6 +266,6 @@ bot.on('successful_payment', async (ctx) => {
 bot.launch();
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server started on port ${PORT}`);
 });
