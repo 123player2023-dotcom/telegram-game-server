@@ -3,8 +3,9 @@ const cors = require('cors');
 const { Telegraf } = require('telegraf');
 const http = require('http');
 const { Server } = require('socket.io');
-const mongoose = require('mongoose'); // 1. Подключаем Mongoose
+const mongoose = require('mongoose');
 
+// Токен бота (из переменных окружения или замена по умолчанию)
 const BOT_TOKEN = process.env.BOT_TOKEN || '8661865774:AAFXJxBonUS_3H69-KMM2FIypPLTAuRlbxQ';
 const bot = new Telegraf(BOT_TOKEN);
 
@@ -17,14 +18,14 @@ const io = new Server(server, {
     cors: { origin: "*", methods: ["GET", "POST"] }
 });
 
-// 2. Подключение к MongoDB (строку подключения лучше хранить в переменных окружения Render: MONGO_URI)
+// Подключение к MongoDB через переменную окружения MONGO_URI
 const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://ваш_логин:пароль@cluster.mongodb.net/givegift?retryWrites=true&w=majority';
 
 mongoose.connect(MONGO_URI)
     .then(() => console.log('✅ Успешно подключено к MongoDB'))
     .catch(err => console.error('❌ Ошибка подключения к MongoDB:', err));
 
-// 3. Создаем схему пользователя для базы данных
+// Схема пользователя в БД
 const userSchema = new mongoose.Schema({
     telegramId: { type: String, required: true, unique: true },
     username: { type: String, default: 'Игрок' },
@@ -34,7 +35,7 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model('User', userSchema);
 
-// Очередь для PvP дуэлей остається в памяти (это временное состояние сессии поиска)
+// Очередь для PvP дуэлей
 let duelQueue = [];
 
 io.on('connection', (socket) => {
@@ -119,7 +120,7 @@ io.on('connection', (socket) => {
     });
 });
 
-// Команда /start
+// Команда /start для Telegram бота
 bot.start(async (ctx) => {
     const welcomeText = `🎁 Добро пожаловать в GiveGift!\nИспытай удачу и прокачай свой инвентарь...`;
     try {
@@ -136,7 +137,7 @@ bot.start(async (ctx) => {
     }
 });
 
-// 1. Авторизация / Вход через БД
+// API 1: Авторизация / Вход с сохранением в БД
 app.post('/api/login', async (req, res) => {
     const { telegramId, username } = req.body;
     if (!telegramId) return res.status(400).json({ error: 'Invalid telegramId' });
@@ -156,7 +157,7 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// 2. Обновление баланса в БД
+// API 2: Обновление баланса звёзд
 app.post('/api/update-stars', async (req, res) => {
     const { telegramId, stars } = req.body;
     const parsedStars = parseInt(stars);
@@ -171,7 +172,7 @@ app.post('/api/update-stars', async (req, res) => {
     }
 });
 
-// 3. Обновление инвентаря в БД
+// API 3: Обновление инвентаря
 app.post('/api/update-inventory', async (req, res) => {
     const { telegramId, inventory } = req.body;
     if (!Array.isArray(inventory)) return res.status(400).json({ error: 'Invalid inventory' });
@@ -185,7 +186,7 @@ app.post('/api/update-inventory', async (req, res) => {
     }
 });
 
-// 4. Создание инвойса
+// API 4: Выставление счёта на оплату Telegram Stars
 app.post('/api/create-invoice', async (req, res) => {
     const { telegramId, starsAmount } = req.body;
     const amount = parseInt(starsAmount);
@@ -206,7 +207,7 @@ app.post('/api/create-invoice', async (req, res) => {
     }
 });
 
-// 5. Вывод подарка (удаление из инвентаря БД)
+// API 5: Вывод / Удаление предмета из инвентаря
 app.post('/api/withdraw-gift', async (req, res) => {
     const { telegramId, itemIndex } = req.body;
     try {
@@ -224,6 +225,7 @@ app.post('/api/withdraw-gift', async (req, res) => {
     }
 });
 
+// Обработка Telegram платежей
 bot.on('pre_checkout_query', async (ctx) => {
     try { await ctx.answerPreCheckoutQuery(true); } catch (e) {}
 });
@@ -246,6 +248,7 @@ bot.on('successful_payment', async (ctx) => {
     }
 });
 
+// Запуск бота и веб-сервера
 bot.launch();
 
 const PORT = process.env.PORT || 3000;
