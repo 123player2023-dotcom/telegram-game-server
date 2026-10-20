@@ -120,23 +120,6 @@ io.on('connection', (socket) => {
     });
 });
 
-// Команда /start для Telegram бота
-bot.start(async (ctx) => {
-    const welcomeText = `🎁 Добро пожаловать в GiveGift!\nИспытай удачу и прокачай свой инвентарь...`;
-    try {
-        await ctx.replyWithPhoto('https://raw.githubusercontent.com/123player2023-dotcom/telegram-game/main/preview.jpg', {
-            caption: welcomeText,
-            parse_mode: 'HTML',
-            reply_markup: { inline_keyboard: [[{ text: "🎮 Играть", web_app: { url: "https://123player2023-dotcom.github.io/telegram-game/" } }]] }
-        });
-    } catch (e) {
-        await ctx.reply(welcomeText, {
-            parse_mode: 'HTML',
-            reply_markup: { inline_keyboard: [[{ text: "🎮 Играть", web_app: { url: "https://123player2023-dotcom.github.io/telegram-game/" } }]] }
-        });
-    }
-});
-
 // API 1: Авторизация / Вход с сохранением в БД
 app.post('/api/login', async (req, res) => {
     const { telegramId, username } = req.body;
