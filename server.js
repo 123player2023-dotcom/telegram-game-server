@@ -13,6 +13,45 @@ app.use(cors());
 // База данных в памяти
 let usersDB = {};
 
+// Обработчик команды /start с вашим приветствием и кнопкой запуска мини-приложения
+bot.onText(/\/start/, async (msg) => {
+    const chatId = msg.chat.id;
+    const welcomeText = 
+`🎁 Добро пожаловать в GiveGift!
+Готов испытать удачу и прокачать свой инвентарь? Здесь каждый кейс скрывает редкие подарки и ценные награды!
+
+Что тебя ждет внутри:
+📦 <b>Открытие кейсов</b> — выбивай уникальные подарки и собирай коллекции.
+⚔️ <b>Онлайн-дуэли</b> — сражайся с другими игроками в реальном времени и забирай их куш!
+⚡ <b>Апгрейд предметов</b> — рискуй, чтобы превратить обычный подарок в эксклюзивный артефакт.
+
+🎁 Твой первый подарок уже ждет! Нажми кнопку ниже, чтобы забрать стартовый бонус и сделать первый запуск!`;
+
+    try {
+        // Отправляем сообщение с картинкой (если вы хотите использовать фото)
+        // Замените URL картинки на прямую ссылку или отправляйте просто текст с кнопкой, если фото не нужно
+        await bot.telegram.sendPhoto(chatId, 'https://raw.githubusercontent.com/123player2023-dotcom/telegram-game/main/preview.jpg', {
+            caption: welcomeText,
+            parse_mode: 'HTML',
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: "🎮 Играть", web_app: { url: "https://123player2023-dotcom.github.io/telegram-game/" } }]
+                ]
+            }
+        });
+    } catch (e) {
+        // Fallback: если фото не загрузится, отправим просто текст с кнопкой
+        await bot.sendMessage(chatId, welcomeText, {
+            parse_mode: 'HTML',
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: "🎮 Играть", web_app: { url: "https://123player2023-dotcom.github.io/telegram-game/" } }]
+                ]
+            }
+        });
+    }
+});
+
 // 1. Авторизация / Вход пользователя
 app.post('/api/login', (req, res) => {
     const { telegramId, username } = req.body;
@@ -84,10 +123,9 @@ app.post('/api/withdraw-gift', (req, res) => {
 });
 
 // ==========================================
-// ОБЯЗАТЕЛЬНЫЕ ОБРАБОТЧИКИ TELEGRAM STARS (ЧТОБЫ ОКНО НЕ ВИСЕЛО)
+// ОБЯЗАТЕЛЬНЫЕ ОБРАБОТЧИКИ TELEGRAM STARS
 // ==========================================
 
-// Подтверждение предварительного запроса платежа от Telegram
 bot.on('pre_checkout_query', async (ctx) => {
     try {
         await ctx.answerPreCheckoutQuery(true);
@@ -96,7 +134,6 @@ bot.on('pre_checkout_query', async (ctx) => {
     }
 });
 
-// Обработка успешной оплаты и начисление звезд на баланс игрока
 bot.on('successful_payment', async (ctx) => {
     try {
         const payment = ctx.message.successful_payment;
