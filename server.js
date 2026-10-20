@@ -33,12 +33,18 @@ io.on('connection', (socket) => {
         const { username, bet } = data;
         console.log(`Игрок ${username} встал в очередь дуэли со ставкой ${bet}⭐`);
 
+        // Проверяем, есть ли уже кто-то в очереди с такой же ставкой
         const existingIndex = duelQueue.findIndex(item => item.bet === bet && item.socketId !== socket.id);
 
         if (existingIndex !== -1) {
+            // Нашли соперника!
             const opponent = duelQueue.splice(existingIndex, 1)[0];
+            console.log(`Дуэль найдена между ${username} и ${opponent.username}`);
+
+            // Генерируем результаты для обоих (случайный победитель)
             const isFirstWinner = Math.random() < 0.5;
 
+            // Генерируем подарки
             const giftsList = [
                 { name: "Ничего", icon: "❌", price: 0 },
                 { name: "Сердце", icon: "💖", price: 15 },
@@ -57,6 +63,7 @@ io.on('connection', (socket) => {
                 gift2 = giftsList[(giftsList.indexOf(gift1) + 1) % giftsList.length];
             }
 
+            // Отправляем первому игроку
             io.to(socket.id).emit('duel_started', {
                 opponentName: opponent.username,
                 isWinner: isFirstWinner,
@@ -64,6 +71,7 @@ io.on('connection', (socket) => {
                 opponentGift: isFirstWinner ? (gift1.price < gift2.price ? gift1 : gift2) : (gift1.price >= gift2.price ? gift1 : gift2)
             });
 
+            // Отправляем второму игроку
             io.to(opponent.socketId).emit('duel_started', {
                 opponentName: username,
                 isWinner: !isFirstWinner,
@@ -72,16 +80,21 @@ io.on('connection', (socket) => {
             });
 
         } else {
+            // Никого нет в очереди — добавляем игрока
             duelQueue.push({
                 socketId: socket.id,
                 username: username,
                 bet: bet
             });
 
+            // Защита от долгого ожидания: если через 5 секунд никто не нашлся, создаем бота-соперника
             setTimeout(() => {
                 const inQueue = duelQueue.find(item => item.socketId === socket.id);
                 if (inQueue) {
+                    // Убираем из очереди
                     duelQueue = duelQueue.filter(item => item.socketId !== socket.id);
+                    console.log(`Создаем бота-соперника для ${username}`);
+
                     const botNames = ["CryptoKing", "StarLord", "LuckyUser", "GiftMaster", "TonWinner"];
                     const botName = botNames[Math.floor(Math.random() * botNames.length)];
                     const isBotWinner = Math.random() < 0.5;
@@ -116,7 +129,7 @@ io.on('connection', (socket) => {
     });
 });
 
-// Правильный метод bot.start() для Telegraf
+// Обработчик команды /start с вашим текстом и кнопкой запуска
 bot.start(async (ctx) => {
     const chatId = ctx.chat.id;
     const welcomeText = 
@@ -157,7 +170,7 @@ app.post('/api/login', (req, res) => {
     const { telegramId, username } = req.body;
     if (!usersDB[telegramId]) {
         usersDB[telegramId] = {
-            stars: 0,
+            stars: 0, // Стартовый баланс 0
             inventory: [],
             username: username || 'Игрок'
         };
@@ -198,8 +211,8 @@ app.post('/api/create-invoice', async (req, res) => {
             title: `Пополнение ${starsAmount} ⭐`,
             description: `Покупка ${starsAmount} Telegram Stars в игре`,
             payload: JSON.stringify({ userId: telegramId, stars: parseInt(starsAmount) }),
-            provider_token: "", 
-            currency: "XTR",     
+            provider_token: "", // ДЛЯ ЗВЕЗД ОБЯЗАТЕЛЬНО ПУСТАЯ СТРОКА!
+            currency: "XTR",     // Валюта Telegram Stars
             prices: [{ label: `${starsAmount} Stars`, amount: parseInt(starsAmount) }]
         });
         res.json({ invoiceLink });
@@ -222,7 +235,11 @@ app.post('/api/withdraw-gift', (req, res) => {
     res.status(400).json({ error: 'Invalid item index' });
 });
 
-// Обработчики платежей Telegram Stars
+// ==========================================
+// ОБЯЗАТЕЛЬНЫЕ ОБРАБОТЧИКИ TELEGRAM STARS
+// ==========================================
+
+// Подтверждение предварительного запроса платежа от Telegram
 bot.on('pre_checkout_query', async (ctx) => {
     try {
         await ctx.answerPreCheckoutQuery(true);
@@ -231,6 +248,7 @@ bot.on('pre_checkout_query', async (ctx) => {
     }
 });
 
+// Обработка успешной оплаты и начисление звезд на баланс игрока
 bot.on('successful_payment', async (ctx) => {
     try {
         const payment = ctx.message.successful_payment;
