@@ -18,7 +18,7 @@ const io = new Server(server, {
     cors: { origin: "*", methods: ["GET", "POST"] }
 });
 
-// Подключение к MongoDB (надежное хранение данных, которые не стираются при перезагрузке)
+// Подключение к MongoDB (надежное хранение данных в облаке)
 const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://ваш_логин:пароль@cluster.mongodb.net/givegift?retryWrites=true&w=majority';
 
 mongoose.connect(MONGO_URI)
@@ -189,7 +189,7 @@ app.post('/api/create-invoice', async (req, res) => {
     }
 });
 
-// 5. Вывод подарка (Удаление из инвентаря на сервере)
+// 5. Безопасный вывод / отправка подарка с защитой от сбоев
 app.post('/api/withdraw-gift', async (req, res) => {
     const { telegramId, itemIndex } = req.body;
     try {
@@ -197,12 +197,43 @@ app.post('/api/withdraw-gift', async (req, res) => {
         if (!user) return res.status(404).json({ error: 'User not found' });
 
         if (itemIndex >= 0 && itemIndex < user.inventory.length) {
-            user.inventory.splice(itemIndex, 1);
-            await user.save();
-            return res.json({ success: true, inventory: user.inventory });
+            const item = user.inventory[itemIndex];
+
+            try {
+                // Пытаемся отправить официальный подарок через Telegram API
+                if (item.giftId) {
+                    await bot.telegram.callApi('sendGift', {
+                        user_id: telegramId,
+                        gift_id: item.giftId,
+                        text: `🎁 Ваш подарок "${item.name}" успешно доставлен из игры GiveGift!`
+                    });
+                } else {
+                    await bot.telegram.sendMessage(
+                        telegramId, 
+                        `🎁 Вы успешно вывели предмет: ${item.icon} *${item.name}*!`
+                    );
+                }
+
+                // Успешно: удаляем предмет из инвентаря в БД
+                user.inventory.splice(itemIndex, 1);
+                await user.save();
+                
+                return res.json({ success: true, inventory: user.inventory });
+
+            } catch (tgError) {
+                console.error('Ошибка отправки подарка через Telegram API:', tgError);
+                
+                // ЗАЩИТА: Если ошибка — предмет НЕ удаляется, возвращаем текущий инвентарь клиенту
+                return res.status(400).json({ 
+                    success: false, 
+                    error: 'Извините, произошла техническая ошибка при выводе подарка. Ваш предмет остался в инвентаре, попробуйте позже!',
+                    inventory: user.inventory 
+                });
+            }
         }
         res.status(400).json({ error: 'Invalid item index' });
     } catch (e) {
+        console.error('Withdraw error:', e);
         res.status(500).json({ error: 'Database error' });
     }
 });
