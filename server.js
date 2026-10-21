@@ -5,7 +5,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const mongoose = require('mongoose');
 
-// Токен бота (из переменных окружения или замена по умолчанию)
+// Токен бота
 const BOT_TOKEN = process.env.BOT_TOKEN || '8661865774:AAFXJxBonUS_3H69-KMM2FIypPLTAuRlbxQ';
 const bot = new Telegraf(BOT_TOKEN);
 
@@ -18,14 +18,14 @@ const io = new Server(server, {
     cors: { origin: "*", methods: ["GET", "POST"] }
 });
 
-// Подключение к MongoDB через переменную окружения MONGO_URI
+// Подключение к MongoDB (надежное хранение данных, которые не стираются при перезагрузке)
 const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://ваш_логин:пароль@cluster.mongodb.net/givegift?retryWrites=true&w=majority';
 
 mongoose.connect(MONGO_URI)
     .then(() => console.log('✅ Успешно подключено к MongoDB'))
     .catch(err => console.error('❌ Ошибка подключения к MongoDB:', err));
 
-// Схема пользователя в БД
+// Схема пользователя в базе данных
 const userSchema = new mongoose.Schema({
     telegramId: { type: String, required: true, unique: true },
     username: { type: String, default: 'Игрок' },
@@ -35,18 +35,17 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model('User', userSchema);
 
-// Очередь для PvP дуэлей
+// Очередь для поиска PvP дуэлей
 let duelQueue = [];
 
 io.on('connection', (socket) => {
     console.log('Игрок подключился по сокету:', socket.id);
 
-    socket.on('find_duel', async (data) => {
+    socket.on('find_duel', (data) => {
         const { username, bet } = data;
         const parsedBet = parseInt(bet);
         if (isNaN(parsedBet) || parsedBet < 25) return;
 
-        console.log(`Игрок ${username} встал в очередь дуэли со ставкой ${parsedBet}⭐`);
         const existingIndex = duelQueue.findIndex(item => item.bet === parsedBet && item.socketId !== socket.id);
 
         if (existingIndex !== -1) {
@@ -120,7 +119,7 @@ io.on('connection', (socket) => {
     });
 });
 
-// API 1: Авторизация / Вход с сохранением в БД
+// 1. Авторизация / Вход с сохранением в MongoDB
 app.post('/api/login', async (req, res) => {
     const { telegramId, username } = req.body;
     if (!telegramId) return res.status(400).json({ error: 'Invalid telegramId' });
@@ -140,7 +139,7 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// API 2: Обновление баланса звёзд
+// 2. Обновление баланса звезд
 app.post('/api/update-stars', async (req, res) => {
     const { telegramId, stars } = req.body;
     const parsedStars = parseInt(stars);
@@ -155,7 +154,7 @@ app.post('/api/update-stars', async (req, res) => {
     }
 });
 
-// API 3: Обновление инвентаря
+// 3. Обновление инвентаря
 app.post('/api/update-inventory', async (req, res) => {
     const { telegramId, inventory } = req.body;
     if (!Array.isArray(inventory)) return res.status(400).json({ error: 'Invalid inventory' });
@@ -169,7 +168,7 @@ app.post('/api/update-inventory', async (req, res) => {
     }
 });
 
-// API 4: Выставление счёта на оплату Telegram Stars
+// 4. Создание счета для оплаты через Telegram Stars
 app.post('/api/create-invoice', async (req, res) => {
     const { telegramId, starsAmount } = req.body;
     const amount = parseInt(starsAmount);
@@ -190,11 +189,11 @@ app.post('/api/create-invoice', async (req, res) => {
     }
 });
 
-// API 5: Вывод / Удаление предмета из инвентаря
+// 5. Вывод подарка (Удаление из инвентаря на сервере)
 app.post('/api/withdraw-gift', async (req, res) => {
     const { telegramId, itemIndex } = req.body;
     try {
-        const user = await User.findOne({ telegramId });
+        let user = await User.findOne({ telegramId });
         if (!user) return res.status(404).json({ error: 'User not found' });
 
         if (itemIndex >= 0 && itemIndex < user.inventory.length) {
@@ -208,7 +207,7 @@ app.post('/api/withdraw-gift', async (req, res) => {
     }
 });
 
-// Обработка Telegram платежей
+// Обработка платежей Telegram Stars
 bot.on('pre_checkout_query', async (ctx) => {
     try { await ctx.answerPreCheckoutQuery(true); } catch (e) {}
 });
@@ -225,14 +224,11 @@ bot.on('successful_payment', async (ctx) => {
             { $inc: { stars: addedStars } },
             { upsert: true }
         );
-        console.log(`Пользователь ${userId} пополнил баланс на ${addedStars} ⭐ через БД`);
+        console.log(`Пользователь ${userId} пополнил баланс на ${addedStars} ⭐`);
     } catch (e) {
         console.error('Payment error:', e);
     }
 });
-
-// Запуск бота и веб-сервера
-bot.launch();
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
