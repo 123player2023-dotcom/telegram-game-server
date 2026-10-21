@@ -41,76 +41,96 @@ let duelQueue = [];
 io.on('connection', (socket) => {
     console.log('Игрок подключился по сокету:', socket.id);
 
-    socket.on('find_duel', (data) => {
-        const { username, bet } = data;
+    // БЕЗОПАСНЫЙ ПОИСК ДУЭЛИ С ПРОВЕРКОЙ БАЛАНСА В БД И СПИСАНИЕМ СТАВКИ
+    socket.on('find_duel', async (data) => {
+        const { telegramId, username, bet } = data;
         const parsedBet = parseInt(bet);
-        if (isNaN(parsedBet) || parsedBet < 25) return;
+        if (isNaN(parsedBet) || parsedBet < 25) {
+            return socket.emit('duel_error', { error: 'Минимальная ставка 25 звезд' });
+        }
 
-        const existingIndex = duelQueue.findIndex(item => item.bet === parsedBet && item.socketId !== socket.id);
-
-        if (existingIndex !== -1) {
-            const opponent = duelQueue.splice(existingIndex, 1)[0];
-            const isFirstWinner = Math.random() < 0.5;
-
-            const giftsList = [
-                { name: "Ничего", icon: "❌", price: 0 },
-                { name: "Сердце", icon: "💖", price: 15 },
-                { name: "Мишка", icon: "🧸", price: 15 },
-                { name: "Подарочек", icon: "🎁", price: 25 },
-                { name: "Букет", icon: "💐", price: 25 },
-                { name: "Шампанское", icon: "🍾", price: 50 },
-                { name: "Ракета", icon: "🚀", price: 50 },
-                { name: "Бриллиант", icon: "💎", price: 100 },
-                { name: "Кольцо", icon: "💍", price: 100 }
-            ];
-
-            const gift1 = giftsList[Math.floor(Math.random() * giftsList.length)];
-            let gift2 = giftsList[Math.floor(Math.random() * giftsList.length)];
-            if (gift1.name === gift2.name) {
-                gift2 = giftsList[(giftsList.indexOf(gift1) + 1) % giftsList.length];
+        try {
+            // 1. Проверяем баланс игрока в базе данных
+            let user = await User.findOne({ telegramId });
+            if (!user || user.stars < parsedBet) {
+                return socket.emit('duel_error', { error: 'Недостаточно звезд на балансе для ставки!' });
             }
 
-            io.to(socket.id).emit('duel_started', {
-                opponentName: opponent.username,
-                isWinner: isFirstWinner,
-                myGift: isFirstWinner ? (gift1.price >= gift2.price ? gift1 : gift2) : (gift1.price < gift2.price ? gift1 : gift2),
-                opponentGift: isFirstWinner ? (gift1.price < gift2.price ? gift1 : gift2) : (gift1.price >= gift2.price ? gift1 : gift2)
-            });
+            // 2. Списываем ставку с баланса в БД сразу, исключая читы
+            user.stars -= parsedBet;
+            await user.save();
+            
+            // Отправляем клиенту обновленный баланс для синхронизации
+            socket.emit('balance_updated', { stars: user.stars });
 
-            io.to(opponent.socketId).emit('duel_started', {
-                opponentName: username,
-                isWinner: !isFirstWinner,
-                myGift: !isFirstWinner ? (gift1.price >= gift2.price ? gift1 : gift2) : (gift1.price < gift2.price ? gift1 : gift2),
-                opponentGift: !isFirstWinner ? (gift1.price < gift2.price ? gift1 : gift2) : (gift1.price >= gift2.price ? gift1 : gift2)
-            });
-        } else {
-            duelQueue.push({ socketId: socket.id, username: username, bet: parsedBet });
-            setTimeout(() => {
-                const inQueue = duelQueue.find(item => item.socketId === socket.id);
-                if (inQueue) {
-                    duelQueue = duelQueue.filter(item => item.socketId !== socket.id);
-                    const botNames = ["CryptoKing", "StarLord", "LuckyUser", "GiftMaster", "TonWinner"];
-                    const botName = botNames[Math.floor(Math.random() * botNames.length)];
-                    const isBotWinner = Math.random() < 0.5;
+            const existingIndex = duelQueue.findIndex(item => item.bet === parsedBet && item.socketId !== socket.id);
 
-                    const giftsList = [
-                        { name: "Ничего", icon: "❌", price: 0 },
-                        { name: "Сердце", icon: "💖", price: 15 },
-                        { name: "Мишка", icon: "🧸", price: 15 },
-                        { name: "Подарочек", icon: "🎁", price: 25 },
-                        { name: "Букет", icon: "💐", price: 25 },
-                        { name: "Шампанское", icon: "🍾", price: 50 },
-                        { name: "Ракета", icon: "🚀", price: 50 }
-                    ];
+            if (existingIndex !== -1) {
+                const opponent = duelQueue.splice(existingIndex, 1)[0];
+                const isFirstWinner = Math.random() < 0.5;
 
-                    io.to(socket.id).emit('duel_started', {
-                        opponentName: botName,
-                        isWinner: isBotWinner,
-                        myGift: giftsList[Math.floor(Math.random() * giftsList.length)],
-                        opponentGift: giftsList[Math.floor(Math.random() * giftsList.length)]
-                    });
+                const giftsList = [
+                    { name: "Ничего", icon: "❌", price: 0 },
+                    { name: "Сердце", icon: "💖", price: 15 },
+                    { name: "Мишка", icon: "🧸", price: 15 },
+                    { name: "Подарочек", icon: "🎁", price: 25 },
+                    { name: "Букет", icon: "💐", price: 25 },
+                    { name: "Шампанское", icon: "🍾", price: 50 },
+                    { name: "Ракета", icon: "🚀", price: 50 },
+                    { name: "Бриллиант", icon: "💎", price: 100 },
+                    { name: "Кольцо", icon: "💍", price: 100 }
+                ];
+
+                const gift1 = giftsList[Math.floor(Math.random() * giftsList.length)];
+                let gift2 = giftsList[Math.floor(Math.random() * giftsList.length)];
+                if (gift1.name === gift2.name) {
+                    gift2 = giftsList[(giftsList.indexOf(gift1) + 1) % giftsList.length];
                 }
-            }, 5000);
+
+                io.to(socket.id).emit('duel_started', {
+                    opponentName: opponent.username,
+                    isWinner: isFirstWinner,
+                    myGift: isFirstWinner ? (gift1.price >= gift2.price ? gift1 : gift2) : (gift1.price < gift2.price ? gift1 : gift2),
+                    opponentGift: isFirstWinner ? (gift1.price < gift2.price ? gift1 : gift2) : (gift1.price >= gift2.price ? gift1 : gift2)
+                });
+
+                io.to(opponent.socketId).emit('duel_started', {
+                    opponentName: username,
+                    isWinner: !isFirstWinner,
+                    myGift: !isFirstWinner ? (gift1.price >= gift2.price ? gift1 : gift2) : (gift1.price < gift2.price ? gift1 : gift2),
+                    opponentGift: !isFirstWinner ? (gift1.price < gift2.price ? gift1 : gift2) : (gift1.price >= gift2.price ? gift1 : gift2)
+                });
+            } else {
+                duelQueue.push({ socketId: socket.id, telegramId, username: username, bet: parsedBet });
+                setTimeout(async () => {
+                    const inQueue = duelQueue.find(item => item.socketId === socket.id);
+                    if (inQueue) {
+                        duelQueue = duelQueue.filter(item => item.socketId !== socket.id);
+                        const botNames = ["CryptoKing", "StarLord", "LuckyUser", "GiftMaster", "TonWinner"];
+                        const botName = botNames[Math.floor(Math.random() * botNames.length)];
+                        const isBotWinner = Math.random() < 0.5;
+
+                        const giftsList = [
+                            { name: "Ничего", icon: "❌", price: 0 },
+                            { name: "Сердце", icon: "💖", price: 15 },
+                            { name: "Мишка", icon: "🧸", price: 15 },
+                            { name: "Подарочек", icon: "🎁", price: 25 },
+                            { name: "Букет", icon: "💐", price: 25 },
+                            { name: "Шампанское", icon: "🍾", price: 50 },
+                            { name: "Ракета", icon: "🚀", price: 50 }
+                        ];
+
+                        io.to(socket.id).emit('duel_started', {
+                            opponentName: botName,
+                            isWinner: isBotWinner,
+                            myGift: giftsList[Math.floor(Math.random() * giftsList.length)],
+                            opponentGift: giftsList[Math.floor(Math.random() * giftsList.length)]
+                        });
+                    }
+                }, 5000);
+            }
+        } catch (e) {
+            console.error('Duel queue error:', e);
         }
     });
 
@@ -189,7 +209,7 @@ app.post('/api/create-invoice', async (req, res) => {
     }
 });
 
-// 5. Безопасный вывод / отправка подарка с защитой от сбоев
+// 5. Безопасный вывод подарка с серверной проверкой кулдауна и защитой от сбоев
 app.post('/api/withdraw-gift', async (req, res) => {
     const { telegramId, itemIndex } = req.body;
     try {
@@ -198,6 +218,15 @@ app.post('/api/withdraw-gift', async (req, res) => {
 
         if (itemIndex >= 0 && itemIndex < user.inventory.length) {
             const item = user.inventory[itemIndex];
+
+            // Проверка кулдауна на сервере (зашита в availableAt)
+            if (item.availableAt && new Date() < new Date(item.availableAt)) {
+                return res.status(400).json({ 
+                    success: false, 
+                    error: '⏳ Этот предмет еще защищен кулдауном. Подождите окончания таймера!',
+                    inventory: user.inventory 
+                });
+            }
 
             try {
                 // Пытаемся отправить официальный подарок через Telegram API
@@ -223,7 +252,7 @@ app.post('/api/withdraw-gift', async (req, res) => {
             } catch (tgError) {
                 console.error('Ошибка отправки подарка через Telegram API:', tgError);
                 
-                // ЗАЩИТА: Если ошибка — предмет НЕ удаляется, возвращаем текущий инвентарь клиенту
+                // ЗАЩИТА: Если ошибка — предмет НЕ удаляется, возвращаем актуальный инвентарь
                 return res.status(400).json({ 
                     success: false, 
                     error: 'Извините, произошла техническая ошибка при выводе подарка. Ваш предмет остался в инвентаре, попробуйте позже!',
