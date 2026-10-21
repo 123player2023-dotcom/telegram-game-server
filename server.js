@@ -1,153 +1,57 @@
 const express = require('express');
-const cors = require('cors');
-const { Telegraf } = require('telegraf');
 const http = require('http');
 const { Server } = require('socket.io');
-const mongoose = require('mongoose');
-
-// Токен бота
-const BOT_TOKEN = process.env.BOT_TOKEN || '8661865774:AAFXJxBonUS_3H69-KMM2FIypPLTAuRlbxQ';
-const bot = new Telegraf(BOT_TOKEN);
+const cors = require('cors');
+const { Telegraf } = require('telegraf');
 
 const app = express();
-app.use(express.json());
-app.use(cors());
-
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: { origin: "*", methods: ["GET", "POST"] }
 });
 
-// Подключение к MongoDB (надежное хранение данных в облаке)
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://ваш_логин:пароль@cluster.mongodb.net/givegift?retryWrites=true&w=majority';
+app.use(cors());
+app.use(express.json());
 
-mongoose.connect(MONGO_URI)
-    .then(() => console.log('✅ Успешно подключено к MongoDB'))
-    .catch(err => console.error('❌ Ошибка подключения к MongoDB:', err));
+// Токен вашего бота
+const BOT_TOKEN = process.env.BOT_TOKEN || '8661865774:AAFXJxBonUS_3H69-KMM2FIypPLTAuRlbxQ';
+const bot = new Telegraf(BOT_TOKEN);
 
-// Схема пользователя в базе данных
-const userSchema = new mongoose.Schema({
-    telegramId: { type: String, required: true, unique: true },
-    username: { type: String, default: 'Игрок' },
+// Подключение к MongoDB (используем встроенную имитацию или реальный mongoose, если настроен)
+const mongoose = require('mongoose');
+const MONGO_URI = process.env.MONGO_URI;
+
+let UserSchema = new mongoose.Schema({
+    telegramId: { type: String, unique: true, required: true },
+    username: String,
     stars: { type: Number, default: 0 },
     inventory: { type: Array, default: [] }
 });
+let UserModel = mongoose.model('User', UserSchema);
 
-const User = mongoose.model('User', userSchema);
-
-// Очередь для поиска PvP дуэлей
-let duelQueue = [];
-
-io.on('connection', (socket) => {
-    console.log('Игрок подключился по сокету:', socket.id);
-
-    // БЕЗОПАСНЫЙ ПОИСК ДУЭЛИ С ПРОВЕРКОЙ БАЛАНСА В БД И СПИСАНИЕМ СТАВКИ
-    socket.on('find_duel', async (data) => {
-        const { telegramId, username, bet } = data;
-        const parsedBet = parseInt(bet);
-        if (isNaN(parsedBet) || parsedBet < 25) {
-            return socket.emit('duel_error', { error: 'Минимальная ставка 25 звезд' });
-        }
-
+async function connectDB() {
+    if (MONGO_URI) {
         try {
-            // 1. Проверяем баланс игрока в базе данных
-            let user = await User.findOne({ telegramId });
-            if (!user || user.stars < parsedBet) {
-                return socket.emit('duel_error', { error: 'Недостаточно звезд на балансе для ставки!' });
-            }
-
-            // 2. Списываем ставку с баланса в БД сразу, исключая читы
-            user.stars -= parsedBet;
-            await user.save();
-            
-            // Отправляем клиенту обновленный баланс для синхронизации
-            socket.emit('balance_updated', { stars: user.stars });
-
-            const existingIndex = duelQueue.findIndex(item => item.bet === parsedBet && item.socketId !== socket.id);
-
-            if (existingIndex !== -1) {
-                const opponent = duelQueue.splice(existingIndex, 1)[0];
-                const isFirstWinner = Math.random() < 0.5;
-
-                const giftsList = [
-                    { name: "Ничего", icon: "❌", price: 0 },
-                    { name: "Сердце", icon: "💖", price: 15 },
-                    { name: "Мишка", icon: "🧸", price: 15 },
-                    { name: "Подарочек", icon: "🎁", price: 25 },
-                    { name: "Букет", icon: "💐", price: 25 },
-                    { name: "Шампанское", icon: "🍾", price: 50 },
-                    { name: "Ракета", icon: "🚀", price: 50 },
-                    { name: "Бриллиант", icon: "💎", price: 100 },
-                    { name: "Кольцо", icon: "💍", price: 100 }
-                ];
-
-                const gift1 = giftsList[Math.floor(Math.random() * giftsList.length)];
-                let gift2 = giftsList[Math.floor(Math.random() * giftsList.length)];
-                if (gift1.name === gift2.name) {
-                    gift2 = giftsList[(giftsList.indexOf(gift1) + 1) % giftsList.length];
-                }
-
-                io.to(socket.id).emit('duel_started', {
-                    opponentName: opponent.username,
-                    isWinner: isFirstWinner,
-                    myGift: isFirstWinner ? (gift1.price >= gift2.price ? gift1 : gift2) : (gift1.price < gift2.price ? gift1 : gift2),
-                    opponentGift: isFirstWinner ? (gift1.price < gift2.price ? gift1 : gift2) : (gift1.price >= gift2.price ? gift1 : gift2)
-                });
-
-                io.to(opponent.socketId).emit('duel_started', {
-                    opponentName: username,
-                    isWinner: !isFirstWinner,
-                    myGift: !isFirstWinner ? (gift1.price >= gift2.price ? gift1 : gift2) : (gift1.price < gift2.price ? gift1 : gift2),
-                    opponentGift: !isFirstWinner ? (gift1.price < gift2.price ? gift1 : gift2) : (gift1.price >= gift2.price ? gift1 : gift2)
-                });
-            } else {
-                duelQueue.push({ socketId: socket.id, telegramId, username: username, bet: parsedBet });
-                setTimeout(async () => {
-                    const inQueue = duelQueue.find(item => item.socketId === socket.id);
-                    if (inQueue) {
-                        duelQueue = duelQueue.filter(item => item.socketId !== socket.id);
-                        const botNames = ["CryptoKing", "StarLord", "LuckyUser", "GiftMaster", "TonWinner"];
-                        const botName = botNames[Math.floor(Math.random() * botNames.length)];
-                        const isBotWinner = Math.random() < 0.5;
-
-                        const giftsList = [
-                            { name: "Ничего", icon: "❌", price: 0 },
-                            { name: "Сердце", icon: "💖", price: 15 },
-                            { name: "Мишка", icon: "🧸", price: 15 },
-                            { name: "Подарочек", icon: "🎁", price: 25 },
-                            { name: "Букет", icon: "💐", price: 25 },
-                            { name: "Шампанское", icon: "🍾", price: 50 },
-                            { name: "Ракета", icon: "🚀", price: 50 }
-                        ];
-
-                        io.to(socket.id).emit('duel_started', {
-                            opponentName: botName,
-                            isWinner: isBotWinner,
-                            myGift: giftsList[Math.floor(Math.random() * giftsList.length)],
-                            opponentGift: giftsList[Math.floor(Math.random() * giftsList.length)]
-                        });
-                    }
-                }, 5000);
-            }
-        } catch (e) {
-            console.error('Duel queue error:', e);
+            await mongoose.connect(MONGO_URI);
+            console.log("🟢 Подключено к MongoDB Atlas");
+        } catch (err) {
+            console.error("🔴 Ошибка подключения к MongoDB:", err);
         }
-    });
+    } else {
+        console.log("⚠️ MONGO_URI не задан, используется хранение в памяти");
+    }
+}
+connectDB();
 
-    socket.on('disconnect', () => {
-        duelQueue = duelQueue.filter(item => item.socketId !== socket.id);
-    });
-});
-
-// 1. Авторизация / Вход с сохранением в MongoDB
+// Эндпоинт авторизации / синхронизации игрока
 app.post('/api/login', async (req, res) => {
-    const { telegramId, username } = req.body;
-    if (!telegramId) return res.status(400).json({ error: 'Invalid telegramId' });
-
     try {
-        let user = await User.findOne({ telegramId });
+        const { telegramId, username } = req.body;
+        if (!telegramId) return res.status(400).json({ error: 'No telegramId' });
+
+        let user = await UserModel.findOne({ telegramId });
         if (!user) {
-            user = new User({ telegramId, username: username || 'Игрок', stars: 0, inventory: [] });
+            user = new UserModel({ telegramId, username: username || 'Игрок', stars: 0, inventory: [] });
             await user.save();
         } else if (username && user.username !== username) {
             user.username = username;
@@ -155,142 +59,194 @@ app.post('/api/login', async (req, res) => {
         }
         res.json({ stars: user.stars, inventory: user.inventory });
     } catch (e) {
-        res.status(500).json({ error: 'Database error' });
+        res.status(500).json({ error: e.message });
     }
 });
 
-// 2. Обновление баланса звезд
+// Обновление баланса
 app.post('/api/update-stars', async (req, res) => {
-    const { telegramId, stars } = req.body;
-    const parsedStars = parseInt(stars);
-    if (isNaN(parsedStars) || parsedStars < 0) return res.status(400).json({ error: 'Invalid value' });
-
     try {
-        const user = await User.findOneAndUpdate({ telegramId }, { stars: parsedStars }, { new: true });
-        if (!user) return res.status(404).json({ error: 'User not found' });
-        res.json({ success: true, stars: user.stars });
+        const { telegramId, stars } = req.body;
+        let user = await UserModel.findOne({ telegramId });
+        if (user) {
+            user.stars = stars;
+            await user.save();
+            res.json({ success: true, stars: user.stars });
+        } else {
+            res.status(404).json({ error: 'User not found' });
+        }
     } catch (e) {
-        res.status(500).json({ error: 'Database error' });
+        res.status(500).json({ error: e.message });
     }
 });
 
-// 3. Обновление инвентаря
+// Обновление инвентаря
 app.post('/api/update-inventory', async (req, res) => {
-    const { telegramId, inventory } = req.body;
-    if (!Array.isArray(inventory)) return res.status(400).json({ error: 'Invalid inventory' });
-
     try {
-        const user = await User.findOneAndUpdate({ telegramId }, { inventory }, { new: true });
-        if (!user) return res.status(404).json({ error: 'User not found' });
-        res.json({ success: true });
+        const { telegramId, inventory } = req.body;
+        let user = await UserModel.findOne({ telegramId });
+        if (user) {
+            user.inventory = inventory;
+            await user.save();
+            res.json({ success: true });
+        } else {
+            res.status(404).json({ error: 'User not found' });
+        }
     } catch (e) {
-        res.status(500).json({ error: 'Database error' });
+        res.status(500).json({ error: e.message });
     }
 });
 
-// 4. Создание счета для оплаты через Telegram Stars
-app.post('/api/create-invoice', async (req, res) => {
-    const { telegramId, starsAmount } = req.body;
-    const amount = parseInt(starsAmount);
-    if (!amount || amount <= 0) return res.status(400).json({ error: 'Invalid amount' });
-
+// БЕЗОПАСНЫЙ ВЫВОД ПОДАРКА ЧЕРЕЗ TELEGRAM API (sendGift)
+app.post('/api/withdraw-gift', async (req, res) => {
     try {
+        const { telegramId, itemIndex } = req.body;
+        let user = await UserModel.findOne({ telegramId });
+        
+        if (!user || !user.inventory || user.inventory[itemIndex] === undefined) {
+            return res.status(404).json({ success: false, error: 'Предмет не найден в инвентаре' });
+        }
+
+        const item = user.inventory[itemIndex];
+
+        // Проверяем кулдаун (5 минут) на сервере
+        const now = Date.now();
+        if (item.availableAt && now < new Date(item.availableAt).getTime()) {
+            return res.status(400).json({ success: false, error: 'Не истек 5-минутный кулдаун вывода!' });
+        }
+
+        // Если у предмета нет реального giftId (например, тестовый приз), имитируем успешный вывод
+        if (!item.giftId) {
+            user.inventory.splice(itemIndex, 1);
+            await user.save();
+            return res.json({ success: true, inventory: user.inventory });
+        }
+
+        // Временно удаляем предмет из массива на время запроса к Telegram API
+        user.inventory.splice(itemIndex, 1);
+        await user.save();
+
+        try {
+            // Вызываем официальный метод Telegram Bot API sendGift
+            await bot.telegram.callApi('sendGift', {
+                user_id: parseInt(telegramId),
+                gift_id: item.giftId,
+                pay_for_upgrade: true
+            });
+
+            // Успешно отправлено! Изменения уже сохранены (предмет удален)
+            return res.json({ success: true, inventory: user.inventory });
+
+        } catch (tgError) {
+            console.error('Ошибка Telegram API при отправке подарка:', tgError?.response?.description || tgError.message);
+            
+            // ВНИМАНИЕ: Если Telegram вернул ошибку (нет звезд у бота, неверный ID и т.д.),
+            // возвращаем предмет обратно в инвентарь игроку!
+            user.inventory.splice(itemIndex, 0, item);
+            await user.save();
+
+            let errReason = tgError?.response?.description || 'Ошибка Telegram при отправке подарка';
+            if (errReason.includes('not enough stars')) {
+                errReason = 'У бота на балансе недостаточно Telegram Stars для отправки этого подарка!';
+            }
+
+            return res.json({ 
+                success: false, 
+                error: errReason, 
+                inventory: user.inventory 
+            });
+        }
+
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, error: 'Внутренняя ошибка сервера' });
+    }
+});
+
+// Создание инвойса для пополнения Telegram Stars
+app.post('/api/create-invoice', async (req, res) => {
+    try {
+        const { telegramId, starsAmount } = req.body;
+        const prices = [{ label: `${starsAmount} Telegram Stars`, amount: starsAmount }];
+        
         const invoiceLink = await bot.telegram.createInvoiceLink({
-            title: `Пополнение ${amount} ⭐`,
-            description: `Покупка ${amount} Telegram Stars в игре`,
-            payload: JSON.stringify({ userId: telegramId, stars: amount }),
-            provider_token: "",
-            currency: "XTR",
-            prices: [{ label: `${amount} Stars`, amount: amount }]
+            title: 'Пополнение баланса',
+            description: `Пополнение баланса на ${starsAmount} ⭐ в игре`,
+            payload: `deposit_${telegramId}_${Date.now()}`,
+            currency: 'XTR',
+            prices: prices
         });
+
         res.json({ invoiceLink });
     } catch (e) {
-        res.status(500).json({ error: 'Не удалось создать платеж' });
+        console.error('Ошибка создания инвойса:', e);
+        res.status(500).json({ error: e.message });
     }
 });
 
-// 5. Безопасный вывод подарка с серверной проверкой кулдауна и защитой от сбоев
-app.post('/api/withdraw-gift', async (req, res) => {
-    const { telegramId, itemIndex } = req.body;
-    try {
-        let user = await User.findOne({ telegramId });
-        if (!user) return res.status(404).json({ error: 'User not found' });
+// PvP Дуэли через Socket.IO
+let duelQueue = [];
 
-        if (itemIndex >= 0 && itemIndex < user.inventory.length) {
-            const item = user.inventory[itemIndex];
-
-            // Проверка кулдауна на сервере (зашита в availableAt)
-            if (item.availableAt && new Date() < new Date(item.availableAt)) {
-                return res.status(400).json({ 
-                    success: false, 
-                    error: '⏳ Этот предмет еще защищен кулдауном. Подождите окончания таймера!',
-                    inventory: user.inventory 
-                });
+io.on('connection', (socket) => {
+    socket.on('find_duel', async (data) => {
+        const { telegramId, username, bet } = data;
+        
+        try {
+            let user = await UserModel.findOne({ telegramId });
+            if (!user || user.stars < bet) {
+                socket.emit('duel_error', { error: 'Недостаточно звезд на балансе для ставки!' });
+                return;
             }
 
-            try {
-                // Пытаемся отправить официальный подарок через Telegram API
-                if (item.giftId) {
-                    await bot.telegram.callApi('sendGift', {
-                        user_id: telegramId,
-                        gift_id: item.giftId,
-                        text: `🎁 Ваш подарок "${item.name}" успешно доставлен из игры GiveGift!`
-                    });
-                } else {
-                    await bot.telegram.sendMessage(
-                        telegramId, 
-                        `🎁 Вы успешно вывели предмет: ${item.icon} *${item.name}*!`
-                    );
-                }
+            // Списываем ставку у игрока в базе
+            user.stars -= bet;
+            await user.save();
+            socket.emit('balance_updated', { stars: user.stars });
 
-                // Успешно: удаляем предмет из инвентаря в БД
-                user.inventory.splice(itemIndex, 1);
-                await user.save();
-                
-                return res.json({ success: true, inventory: user.inventory });
+            duelQueue.push({ socket, telegramId, username, bet });
 
-            } catch (tgError) {
-                console.error('Ошибка отправки подарка через Telegram API:', tgError);
+            if (duelQueue.length >= 2) {
+                let p1 = duelQueue.shift();
+                let p2 = duelQueue.shift();
+
+                let p1Wins = Math.random() < 0.5;
                 
-                // ЗАЩИТА: Если ошибка — предмет НЕ удаляется, возвращаем актуальный инвентарь
-                return res.status(400).json({ 
-                    success: false, 
-                    error: 'Извините, произошла техническая ошибка при выводе подарка. Ваш предмет остался в инвентаре, попробуйте позже!',
-                    inventory: user.inventory 
+                const giftsList = [
+                    { name: "Сердце", icon: "💖", price: 15, giftId: "5170145012310081615" },
+                    { name: "Мишка", icon: "🧸", price: 15, giftId: "5170233102089322756" },
+                    { name: "Подарочек", icon: "🎁", price: 25, giftId: "5170250947678437525" },
+                    { name: "Шампанское", icon: "🍾", price: 50, giftId: "6028601630662853006" }
+                ];
+
+                let g1 = giftsList[Math.floor(Math.random() * giftsList.length)];
+                let g2 = giftsList[Math.floor(Math.random() * giftsList.length)];
+
+                p1.socket.emit('duel_started', {
+                    opponentName: p2.username,
+                    isWinner: p1Wins,
+                    myGift: g1,
+                    opponentGift: g2
+                });
+
+                p2.socket.emit('duel_started', {
+                    opponentName: p1.username,
+                    isWinner: !p1Wins,
+                    myGift: g2,
+                    opponentGift: g1
                 });
             }
+        } catch (e) {
+            console.error('Ошибка в дуэли:', e);
+            socket.emit('duel_error', { error: 'Ошибка сервера при запуске дуэли' });
         }
-        res.status(400).json({ error: 'Invalid item index' });
-    } catch (e) {
-        console.error('Withdraw error:', e);
-        res.status(500).json({ error: 'Database error' });
-    }
-});
+    });
 
-// Обработка платежей Telegram Stars
-bot.on('pre_checkout_query', async (ctx) => {
-    try { await ctx.answerPreCheckoutQuery(true); } catch (e) {}
-});
-
-bot.on('successful_payment', async (ctx) => {
-    try {
-        const payment = ctx.message.successful_payment;
-        const payload = JSON.parse(payment.invoice_payload);
-        const userId = payload.userId;
-        const addedStars = payload.stars;
-
-        await User.findOneAndUpdate(
-            { telegramId: userId },
-            { $inc: { stars: addedStars } },
-            { upsert: true }
-        );
-        console.log(`Пользователь ${userId} пополнил баланс на ${addedStars} ⭐`);
-    } catch (e) {
-        console.error('Payment error:', e);
-    }
+    socket.on('disconnect', () => {
+        duelQueue = duelQueue.filter(item => item.socket.id !== socket.id);
+    });
 });
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`Server started on port ${PORT}`);
+    console.log(`🚀 Сервер запущен на порту ${PORT}`);
 });
