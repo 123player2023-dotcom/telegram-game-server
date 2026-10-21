@@ -127,11 +127,10 @@ app.post('/api/withdraw-gift', async (req, res) => {
         await user.save();
 
         try {
-            // Вызываем официальный метод Telegram Bot API sendGift
+            // Вызываем официальный метод Telegram Bot API sendGift (без ошибочного параметра pay_for_upgrade)
             await bot.telegram.callApi('sendGift', {
                 user_id: parseInt(telegramId),
-                gift_id: item.giftId,
-                pay_for_upgrade: true
+                gift_id: item.giftId
             });
 
             // Успешно отправлено! Изменения уже сохранены (предмет удален)
@@ -140,8 +139,7 @@ app.post('/api/withdraw-gift', async (req, res) => {
         } catch (tgError) {
             console.error('Ошибка Telegram API при отправке подарка:', tgError?.response?.description || tgError.message);
             
-            // ВНИМАНИЕ: Если Telegram вернул ошибку (нет звезд у бота, неверный ID и т.д.),
-            // возвращаем предмет обратно в инвентарь игроку!
+            // ВНИМАНИЕ: Если Telegram вернул ошибку, возвращаем предмет обратно в инвентарь игроку!
             user.inventory.splice(itemIndex, 0, item);
             await user.save();
 
