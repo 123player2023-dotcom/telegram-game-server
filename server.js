@@ -16,6 +16,42 @@ app.use(express.json());
 const BOT_TOKEN = process.env.BOT_TOKEN || '8661865774:AAFXJxBonUS_3H69-KMM2FIypPLTAuRlbxQ';
 const bot = new Telegraf(BOT_TOKEN);
 
+// Запуск бота с обработкой платежей Telegram Stars
+bot.on('pre_checkout_query', (ctx) => ctx.answerPreCheckoutQuery(true));
+
+bot.on('successful_payment', async (ctx) => {
+    try {
+        const payment = ctx.message.successful_payment;
+        const payload = payment.invoice_payload; // формат: deposit_telegramId_timestamp
+        const parts = payload.split('_');
+        
+        if (parts[0] === 'deposit') {
+            const telegramId = parts[1];
+            // Вычисляем количество звезд из общей суммы (в XTR 1 единица = 1 звезда)
+            const starsPaid = payment.total_amount; 
+
+            let user = await UserModel.findOne({ telegramId });
+            if (user) {
+                user.stars += starsPaid;
+                await user.save();
+                
+                // Отправляем сокет-уведомление клиенту об обновлении баланса в реальном времени
+                io.sockets.sockets.forEach((socket) => {
+                    if (socket.telegramId === telegramId) {
+                        socket.emit('balance_updated', { stars: user.stars });
+                    }
+                });
+                console.log(`⭐ Пользователю ${telegramId} зачислено ${starsPaid} звезд через Telegram Stars.`);
+            }
+        }
+    } catch (e) {
+        console.error('Ошибка обработки успешного платежа:', e);
+    }
+});
+
+// Запускаем бота (в режиме long polling или без вебхуков для работы на Render)
+bot.launch().catch(err => console.error('Ошибка запуска Telegraf бота:', err));
+
 const mongoose = require('mongoose');
 const MONGO_URI = process.env.MONGO_URI;
 
@@ -139,12 +175,18 @@ app.post('/api/withdraw-gift', async (req, res) => {
     }
 });
 
+// Безопасное создание инвойса с таймаутом, чтобы сервер не зависал
 app.post('/api/create-invoice', async (req, res) => {
     try {
         const { telegramId, starsAmount } = req.body;
-        const prices = [{ label: `${starsAmount} Telegram Stars`, amount: starsAmount }];
+        if (!telegramId || !starsAmount) {
+            return res.status(400).json({ error: 'Неверные параметры запроса' });
+        }
+
+        const prices = [{ label: `${starsAmount} Telegram Stars`, amount: parseInt(starsAmount) }];
         
-        const invoiceLink = await bot.telegram.createInvoiceLink({
+        // Добавляем Promise.race с таймаутом в 10 секунд на случай зависания запроса к Telegram API
+        const invoicePromise = bot.telegram.createInvoiceLink({
             title: 'Пополнение баланса',
             description: `Пополнение баланса на ${starsAmount} ⭐ в игре`,
             payload: `deposit_${telegramId}_${Date.now()}`,
@@ -152,17 +194,30 @@ app.post('/api/create-invoice', async (req, res) => {
             prices: prices
         });
 
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Telegram API timeout')), 10000)
+        );
+
+        const invoiceLink = await Promise.race([invoicePromise, timeoutPromise]);
         res.json({ invoiceLink });
     } catch (e) {
-        console.error('Ошибка создания инвойса:', e);
-        res.status(500).json({ error: e.message });
+        console.error('Ошибка создания инвойса:', e.message);
+        res.status(500).json({ error: 'Не удалось создать счет. Попробуйте еще раз.' });
     }
 });
 
 let duelQueue = [];
 io.on('connection', (socket) => {
+    // Привязываем socket к telegramId для мгновенной отправки баланса при оплате
+    socket.on('login_socket', (data) => {
+        if (data && data.telegramId) {
+            socket.telegramId = data.telegramId;
+        }
+    });
+
     socket.on('find_duel', async (data) => {
         const { telegramId, username, bet } = data;
+        socket.telegramId = telegramId;
         try {
             let user = await UserModel.findOne({ telegramId });
             if (!user || user.stars < bet) {
