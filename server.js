@@ -17,17 +17,20 @@ app.use(express.json());
 const BOT_TOKEN = process.env.BOT_TOKEN || '8661865774:AAFXJxBonUS_3H69-KMM2FIypPLTAuRlbxQ';
 const bot = new Telegraf(BOT_TOKEN);
 
-// Запуск бота с обработкой платежей Telegram Stars
+// Обработка пре-чекаута Telegram Stars
 bot.on('pre_checkout_query', (ctx) => ctx.answerPreCheckoutQuery(true));
 
+// Безопасная обработка успешного платежа
 bot.on('successful_payment', async (ctx) => {
     try {
-        const payment = ctx.message.successful_payment;
+        const payment = ctx.update?.message?.successful_payment || ctx.message?.successful_payment;
+        if (!payment) return;
+
         const payload = payment.invoice_payload; // формат: deposit_telegramId_timestamp
         const parts = payload.split('_');
         
         if (parts[0] === 'deposit') {
-            const telegramId = parts[1];
+            const telegramId = String(parts[1]); // Приводим к строке
             const starsPaid = payment.total_amount; 
 
             let user = await UserModel.findOne({ telegramId });
@@ -35,6 +38,7 @@ bot.on('successful_payment', async (ctx) => {
                 user.stars += starsPaid;
                 await user.save();
                 
+                // Уведомляем клиента через сокет об обновлении баланса
                 io.sockets.sockets.forEach((socket) => {
                     if (socket.telegramId === telegramId) {
                         socket.emit('balance_updated', { stars: user.stars });
@@ -79,9 +83,10 @@ app.post('/api/login', async (req, res) => {
         const { telegramId, username } = req.body;
         if (!telegramId) return res.status(400).json({ error: 'No telegramId' });
 
-        let user = await UserModel.findOne({ telegramId });
+        const tIdStr = String(telegramId);
+        let user = await UserModel.findOne({ telegramId: tIdStr });
         if (!user) {
-            user = new UserModel({ telegramId, username: username || 'Игрок', stars: 0, inventory: [] });
+            user = new UserModel({ telegramId: tIdStr, username: username || 'Игрок', stars: 0, inventory: [] });
             await user.save();
         } else if (username && user.username !== username) {
             user.username = username;
@@ -96,7 +101,8 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/update-stars', async (req, res) => {
     try {
         const { telegramId, stars } = req.body;
-        let user = await UserModel.findOne({ telegramId });
+        const tIdStr = String(telegramId);
+        let user = await UserModel.findOne({ telegramId: tIdStr });
         if (user) {
             user.stars = stars;
             await user.save();
@@ -112,7 +118,8 @@ app.post('/api/update-stars', async (req, res) => {
 app.post('/api/update-inventory', async (req, res) => {
     try {
         const { telegramId, inventory } = req.body;
-        let user = await UserModel.findOne({ telegramId });
+        const tIdStr = String(telegramId);
+        let user = await UserModel.findOne({ telegramId: tIdStr });
         if (user) {
             user.inventory = inventory;
             await user.save();
@@ -128,7 +135,8 @@ app.post('/api/update-inventory', async (req, res) => {
 app.post('/api/withdraw-gift', async (req, res) => {
     try {
         const { telegramId, itemIndex } = req.body;
-        let user = await UserModel.findOne({ telegramId });
+        const tIdStr = String(telegramId);
+        let user = await UserModel.findOne({ telegramId: tIdStr });
         
         if (!user || !user.inventory || user.inventory[itemIndex] === undefined) {
             return res.status(404).json({ success: false, error: 'Предмет не найден в инвентаре' });
@@ -151,7 +159,7 @@ app.post('/api/withdraw-gift', async (req, res) => {
 
         try {
             await bot.telegram.callApi('sendGift', {
-                user_id: parseInt(telegramId),
+                user_id: parseInt(tIdStr),
                 gift_id: item.giftId
             });
             return res.json({ success: true, inventory: user.inventory });
@@ -184,7 +192,7 @@ app.post('/api/create-invoice', async (req, res) => {
         const invoicePromise = bot.telegram.createInvoiceLink({
             title: 'Пополнение баланса',
             description: `Пополнение баланса на ${starsAmount} ⭐ в игре`,
-            payload: `deposit_${telegramId}_${Date.now()}`,
+            payload: `deposit_${String(telegramId)}_${Date.now()}`,
             currency: 'XTR',
             prices: prices
         });
@@ -205,15 +213,21 @@ let duelQueue = [];
 io.on('connection', (socket) => {
     socket.on('login_socket', (data) => {
         if (data && data.telegramId) {
-            socket.telegramId = data.telegramId;
+            socket.telegramId = String(data.telegramId);
         }
+    });
+
+    // Обработка отмены поиска дуэли пользователем
+    socket.on('cancel_duel', () => {
+        duelQueue = duelQueue.filter(item => item.socket.id !== socket.id);
     });
 
     socket.on('find_duel', async (data) => {
         const { telegramId, username, bet } = data;
-        socket.telegramId = telegramId;
+        const tIdStr = String(telegramId);
+        socket.telegramId = tIdStr;
         try {
-            let user = await UserModel.findOne({ telegramId });
+            let user = await UserModel.findOne({ telegramId: tIdStr });
             if (!user || user.stars < bet) {
                 socket.emit('duel_error', { error: 'Недостаточно звезд на балансе!' });
                 return;
@@ -222,12 +236,11 @@ io.on('connection', (socket) => {
             await user.save();
             socket.emit('balance_updated', { stars: user.stars });
 
-            duelQueue.push({ socket, telegramId, username, bet });
+            duelQueue.push({ socket, telegramId: tIdStr, username, bet });
             if (duelQueue.length >= 2) {
                 let p1 = duelQueue.shift();
                 let p2 = duelQueue.shift();
 
-                // Расчет шансов с учетом размера ставок
                 let p1Bet = p1.bet;
                 let p2Bet = p2.bet;
                 let p1WinChance = 0.5;
