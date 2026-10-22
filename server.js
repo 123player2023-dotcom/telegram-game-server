@@ -17,7 +17,7 @@ app.use(express.json());
 const BOT_TOKEN = process.env.BOT_TOKEN || '8661865774:AAFXJxBonUS_3H69-KMM2FIypPLTAuRlbxQ';
 const bot = new Telegraf(BOT_TOKEN);
 
-// Приветствие при старте бота (/start) с картинкой и форматированием
+// Приветствие при старте бота (/start) с картинкой по file_id и форматированием
 bot.start(async (ctx) => {
     try {
         const welcomeText = 
@@ -35,9 +35,7 @@ bot.start(async (ctx) => {
 
 🎁  **Твой первый подарок уже ждет!** Нажми кнопку ниже, чтобы забрать стартовый бонус и сделать первый запуск!`;
 
-        const bannerUrl = 'https://raw.githubusercontent.com/123player2023-dotcom/telegram-game-server/main/welcome.jpg';
-
-        await ctx.replyWithPhoto(bannerUrl, {
+        await ctx.replyWithPhoto('AgACAgIAAxkBAAEjyEhq2j7rbOq6UDcEwkIjlMBq5hPirQACgR5rG-ds0UpLN9VnQklxpwEAAwIAA3kAAz0E', {
             caption: welcomeText,
             parse_mode: 'Markdown',
             reply_markup: {
