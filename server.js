@@ -13,6 +13,7 @@ const io = new Server(server, {
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static(__dirname)); // Раздача файлов игры (фронтенда) из корня проекта
 
 const BOT_TOKEN = process.env.BOT_TOKEN || '8661865774:AAFXJxBonUS_3H69-KMM2FIypPLTAuRlbxQ';
 const bot = new Telegraf(BOT_TOKEN);
