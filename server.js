@@ -17,6 +17,40 @@ app.use(express.json());
 const BOT_TOKEN = process.env.BOT_TOKEN || '8661865774:AAFXJxBonUS_3H69-KMM2FIypPLTAuRlbxQ';
 const bot = new Telegraf(BOT_TOKEN);
 
+// Приветствие при старте бота (/start) с картинкой и форматированием
+bot.start(async (ctx) => {
+    try {
+        const welcomeText = 
+`🎁  **Добро пожаловать в GiveGift!**
+
+🤪  Готов испытать удачу и прокачать свой инвентарь? Здесь каждый кейс скрывает редкие подарки и ценные награды!
+
+**Что тебя ждет внутри:**
+
+📦  *Открытие кейсов* — выбивай уникальные подарки и собирай коллекции.
+
+⚔️  *Онлайн-дуэли* — сражайся с другими игроками в реальном времени и забирай их куш!
+
+⚡  *Апгрейд предметов* — рискуй, чтобы превратить обычный подарок в эксклюзивный артефакт.
+
+🎁  **Твой первый подарок уже ждет!** Нажми кнопку ниже, чтобы забрать стартовый бонус и сделать первый запуск!`;
+
+        const bannerUrl = 'https://raw.githubusercontent.com/123player2023-dotcom/telegram-game-server/main/welcome.jpg';
+
+        await ctx.replyWithPhoto(bannerUrl, {
+            caption: welcomeText,
+            parse_mode: 'Markdown',
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: '🎮 Play', web_app: { url: 'https://telegram-game-server.onrender.com' } }]
+                ]
+            }
+        });
+    } catch (e) {
+        console.error('Ошибка отправки приветствия:', e);
+    }
+});
+
 // Обработка пре-чекаута Telegram Stars
 bot.on('pre_checkout_query', (ctx) => ctx.answerPreCheckoutQuery(true));
 
@@ -30,7 +64,7 @@ bot.on('successful_payment', async (ctx) => {
         const parts = payload.split('_');
         
         if (parts[0] === 'deposit') {
-            const telegramId = String(parts[1]); // Приводим к строке
+            const telegramId = String(parts[1]);
             const starsPaid = payment.total_amount; 
 
             let user = await UserModel.findOne({ telegramId });
@@ -38,7 +72,6 @@ bot.on('successful_payment', async (ctx) => {
                 user.stars += starsPaid;
                 await user.save();
                 
-                // Уведомляем клиента через сокет об обновлении баланса
                 io.sockets.sockets.forEach((socket) => {
                     if (socket.telegramId === telegramId) {
                         socket.emit('balance_updated', { stars: user.stars });
@@ -217,7 +250,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Обработка отмены поиска дуэли пользователем
     socket.on('cancel_duel', () => {
         duelQueue = duelQueue.filter(item => item.socket.id !== socket.id);
     });
