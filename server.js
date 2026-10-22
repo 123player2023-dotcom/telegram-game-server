@@ -17,6 +17,17 @@ app.use(express.json());
 const BOT_TOKEN = process.env.BOT_TOKEN || '8661865774:AAFXJxBonUS_3H69-KMM2FIypPLTAuRlbxQ';
 const bot = new Telegraf(BOT_TOKEN);
 
+// Обработка команды /start с приветствием и кнопкой на веб-приложение
+bot.start((ctx) => {
+    return ctx.reply('👋 Добро пожаловать в GiveGift!\n\n🎁 Уникальные кейсы, онлайн-дуэли и ценные призы уже ждут тебя!', {
+        reply_markup: {
+            inline_keyboard: [
+                [{ text: '🎮 Открыть игру', web_app: { url: 'https://telegram-game-server.onrender.com' } }]
+            ]
+        }
+    });
+});
+
 // Обработка пре-чекаута Telegram Stars
 bot.on('pre_checkout_query', (ctx) => ctx.answerPreCheckoutQuery(true));
 
