@@ -176,7 +176,7 @@ app.post('/api/create-invoice', async (req, res) => {
     try {
         const { telegramId, starsAmount } = req.body;
         if (!telegramId || !starsAmount) {
-            return res.status(0).json({ error: 'Неверные параметры запроса' });
+            return res.status(400).json({ error: 'Неверные параметры запроса' });
         }
 
         const prices = [{ label: `${starsAmount} Telegram Stars`, amount: parseInt(starsAmount) }];
