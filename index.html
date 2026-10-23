@@ -113,7 +113,7 @@
             --echo-color: rgba(79, 70, 229, 0.3);
         }
 
-        /* СТИЛИЗАЦИЯ СКРОЛЛБАРА ПОД ТЕМЫ */
+        /* СТИЛИЗАЦИЯ СКРОЛЛБАРА */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -152,9 +152,7 @@
         body { display: flex; justify-content: center; align-items: center; }
         .app-container { width: 100vw; height: 100dvh; background: var(--bg-container); display: flex; flex-direction: column; position: relative; overflow: hidden; padding-top: env(safe-area-inset-top); transition: background 0.3s ease; }
 
-        /* =========================================================
-           АНИМИРОВАННЫЙ ФОН ИЗ ПЛАВАЮЩИХ ИКОНОК
-           ========================================================= */
+        /* АНИМИРОВАННЫЙ ФОН */
         .bg-floating-icons {
             position: absolute;
             inset: 0;
@@ -171,33 +169,54 @@
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
         }
         @keyframes floatUp {
-            0% {
-                transform: translateY(0) rotate(0deg) scale(0.8);
-                opacity: 0;
-            }
-            10% {
-                opacity: 0.22;
-            }
-            90% {
-                opacity: 0.22;
-            }
-            100% {
-                transform: translateY(-110vh) rotate(360deg) scale(1.1);
-                opacity: 0;
-            }
+            0% { transform: translateY(0) rotate(0deg) scale(0.8); opacity: 0; }
+            10% { opacity: 0.22; }
+            90% { opacity: 0.22; }
+            100% { transform: translateY(-110vh) rotate(360deg) scale(1.1); opacity: 0; }
         }
         
         .header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--bg-header); border-bottom: 1px solid var(--border-color); flex-shrink: 0; z-index: 2; }
         .header-title { font-size: 15px; font-weight: 700; color: var(--text-main); letter-spacing: 0.3px; display: flex; align-items: center; gap: 6px; }
         .balance-container { display: flex; align-items: center; gap: 8px; }
         .balance-box { background: var(--input-bg); border: 1px solid var(--border-color); padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; color: #fbbf24; display: flex; align-items: center; gap: 5px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
-        .add-stars-btn { background: var(--accent-gradient); color: #fff; border: none; width: 30px; height: 30px; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px var(--echo-color); position: relative; }
+        .add-stars-btn { background: var(--accent-gradient); color: #fff; border: none; width: 30px; height: 30px; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px var(--echo-color); position: relative; overflow: hidden; }
 
-        /* ЭХО-АНИМАЦИЯ ДЛЯ КНОПОК */
+        /* =========================================================
+           МЯГКИЕ И СГЛАЖЕННЫЕ БЛИКИ НА КНОПКАХ И РАМОЧКАХ
+           ========================================================= */
         button, .mode-card-btn, .switch-tab, .inventory-item, .theme-option, .toggle-switch {
             position: relative;
             transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s ease, background 0.2s ease;
             outline: none;
+            overflow: hidden;
+        }
+
+        /* Медленный, мягкий, сильно размытый диагональный блик */
+        button::before, .mode-card-btn::before, .switch-tab::before {
+            content: '';
+            position: absolute;
+            top: -100%;
+            left: -200%;
+            width: 120%;
+            height: 300%;
+            background: linear-gradient(
+                120deg, 
+                transparent 0%, 
+                rgba(255, 255, 255, 0.0) 25%, 
+                rgba(255, 255, 255, 0.15) 50%, 
+                rgba(255, 255, 255, 0.0) 75%, 
+                transparent 100%
+            );
+            transform: rotate(20deg);
+            pointer-events: none;
+            animation: buttonGlintSweep 8s ease-in-out infinite;
+            z-index: 2;
+        }
+
+        @keyframes buttonGlintSweep {
+            0% { left: -200%; }
+            35% { left: 200%; }
+            100% { left: 200%; }
         }
 
         button:active, .mode-card-btn:active, .switch-tab:active, .inventory-item:active {
@@ -227,6 +246,54 @@
             100% { opacity: 0; transform: scale(1.25); box-shadow: 0 0 20px 12px transparent; }
         }
 
+        /* МЯГКИЕ СТЕКЛЯННЫЕ РАМОЧКИ ДЛЯ ИКОНОК И КЕЙСОВ */
+        .mode-icon-box, .roulette-item, .inventory-item, .upgrade-slot {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.12), 0 4px 14px rgba(0, 0, 0, 0.12);
+            position: relative;
+        }
+
+        /* Очень плавная верхняя стеклянная фаска */
+        .mode-icon-box::after, .inventory-item::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 45%;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.0) 100%);
+            border-radius: inherit;
+            pointer-events: none;
+        }
+
+        /* =========================================================
+           ПЛАВНОЕ И НЕЖНОЕ ЗВЕЗДНОЕ СВЕЧЕНИЕ (150, 200, 250, 300)
+           ========================================================= */
+        .star-item-glow {
+            position: relative;
+            border: 1px solid rgba(251, 191, 36, 0.5) !important;
+            box-shadow: 0 0 12px rgba(251, 191, 36, 0.25), inset 0 0 8px rgba(251, 191, 36, 0.12) !important;
+            animation: starPulseGlow 3.5s ease-in-out infinite alternate !important;
+        }
+
+        .star-item-glow span.item-name {
+            color: #fbbf24 !important;
+            font-weight: 700 !important;
+            text-shadow: 0 0 6px rgba(251, 191, 36, 0.5);
+        }
+
+        @keyframes starPulseGlow {
+            0% {
+                box-shadow: 0 0 8px rgba(251, 191, 36, 0.2), inset 0 0 5px rgba(251, 191, 36, 0.1);
+                border-color: rgba(251, 191, 36, 0.4) !important;
+            }
+            100% {
+                box-shadow: 0 0 16px rgba(251, 191, 36, 0.45), inset 0 0 10px rgba(251, 191, 36, 0.2);
+                border-color: rgba(251, 191, 36, 0.7) !important;
+            }
+        }
+
         .content { flex: 1; position: relative; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 14px; z-index: 1; }
         .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; animation: fadeIn 0.25s ease; }
         .screen.active { display: flex; }
@@ -243,13 +310,12 @@
         .mode-card-btn { width: 100%; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 18px; padding: 18px 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
         .mode-card-btn:hover { border-color: var(--accent-color); }
         .mode-card-left { display: flex; align-items: center; gap: 14px; }
-        .mode-icon-box { font-size: 30px; width: 52px; height: 52px; background: var(--input-bg); border-radius: 14px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); }
+        .mode-icon-box { font-size: 30px; width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
         .mode-info { text-align: left; }
         .mode-title { font-size: 15px; font-weight: 700; color: var(--text-main); margin-bottom: 2px; }
         .mode-desc { font-size: 11px; color: var(--text-muted); }
         .mode-arrow { font-size: 16px; color: var(--accent-color); font-weight: bold; }
 
-        /* МИНИМАЛИСТИЧНАЯ КНОПКА НАЗАД (СТРЕЛОЧКА) */
         .back-to-menu-row { width: 100%; max-width: 400px; display: flex; justify-content: flex-start; margin-bottom: 10px; }
         .back-circle-btn { 
             width: 38px; height: 38px; background: var(--card-bg); border: 1px solid var(--border-color); 
@@ -269,7 +335,7 @@
         .roulette-container { position: relative; width: 100%; height: 95px; background: var(--roulette-bg); border: 2px solid var(--border-color); border-radius: 14px; overflow: hidden; margin: 10px 0; }
         .roulette-pointer { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 3px; height: 100%; background: #ef4444; z-index: 10; box-shadow: 0 0 12px #ef4444; }
         .roulette-track { display: flex; position: absolute; left: 0; top: 0; height: 100%; will-change: transform; }
-        .roulette-item { min-width: 75px; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--roulette-item-bg); border-right: 1px solid var(--border-color); font-size: 26px; }
+        .roulette-item { min-width: 75px; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 26px; }
         .roulette-item span.label { font-size: 9px; color: var(--text-muted); margin-top: 3px; font-weight: 600; }
         
         .btn { background: var(--accent-gradient); color: white; border: none; padding: 13px 20px; border-radius: 14px; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; cursor: pointer; width: 100%; margin-top: 10px; box-shadow: 0 6px 16px var(--echo-color); }
@@ -285,14 +351,12 @@
         .sell-btn { background: var(--card-bg); color: #fbbf24; border: 1px solid var(--border-color); padding: 7px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; margin-top: 4px; width: 100%; }
 
         .inventory-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; max-width: 400px; max-height: 100%; overflow-y: auto; padding: 4px; }
-        .inventory-item { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 14px; padding: 12px 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 28px; text-align: center; cursor: pointer; position: relative; }
-        .inventory-item.selected-inv { border-color: var(--accent-color); background: rgba(139, 92, 246, 0.15); box-shadow: 0 0 12px var(--echo-color); }
+        .inventory-item { border-radius: 14px; padding: 12px 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 28px; text-align: center; cursor: pointer; position: relative; }
+        .inventory-item.selected-inv { border-color: var(--accent-color) !important; background: rgba(139, 92, 246, 0.25); box-shadow: 0 0 14px var(--echo-color); }
         .inventory-item span.item-name { font-size: 11px; color: var(--text-muted); margin-top: 4px; font-weight: 600; }
         .empty-inv { color: var(--text-muted); font-size: 13px; text-align: center; grid-column: span 3; padding: 40px 10px; font-weight: 500; }
         
-        /* =========================================================
-           ПРОФИЛЬ ИГРОКА С ФИОЛЕТОВОЙ НЕОНОВОЙ РАМКОЙ
-           ========================================================= */
+        /* КАРТОЧКА ПРОФИЛЯ С ФИОЛЕТОВОЙ НЕОНОВОЙ РАМКОЙ */
         .profile-card { 
             background: var(--card-bg); 
             border: 2px solid #a855f7; 
@@ -344,8 +408,8 @@
 
         .upgrade-arena { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
         .upgrade-slots { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 10px; }
-        .upgrade-slot { flex: 1; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px 6px; text-align: center; min-height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
-        .upgrade-slot.selected { border-color: var(--accent-color); background: rgba(139, 92, 246, 0.12); }
+        .upgrade-slot { flex: 1; background: var(--input-bg); border-radius: 12px; padding: 12px 6px; text-align: center; min-height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
+        .upgrade-slot.selected { border-color: var(--accent-color) !important; background: rgba(139, 92, 246, 0.12); }
         .upgrade-slot span.item-name { font-size: 10px; color: var(--text-muted); margin-top: 4px; font-weight: 600; }
         .upgrade-arrow { font-size: 18px; color: var(--accent-color); font-weight: bold; }
         
@@ -748,7 +812,6 @@
 </div>
 
 <script>
-    // ГЕНЕРАЦИЯ ПЛАВАЮЩИХ ИКОНОК НА ФОНЕ
     function createFloatingIcons() {
         const bgContainer = document.getElementById('bg-floating-container');
         if (!bgContainer) return;
@@ -780,7 +843,6 @@
         if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
-    // ДИНАМИЧЕСКИЙ ЭЛЕКТРО-САУНДТРЕК (SYNTHWAVE 8-BIT RHYTHM)
     function startBackgroundMusic() {
         if (musicInterval) return;
         const synthBass = [130.81, 146.83, 164.81, 174.61, 196.00];
@@ -795,7 +857,6 @@
 
                 const now = audioCtx.currentTime;
                 
-                // Басовый звук
                 const bassFreq = synthBass[step % synthBass.length];
                 const bassOsc = audioCtx.createOscillator();
                 const bassGain = audioCtx.createGain();
@@ -808,7 +869,6 @@
                 bassOsc.start(now);
                 bassOsc.stop(now + 0.35);
 
-                // Верхнее мелодичное арпеджио
                 if (step % 2 === 0) {
                     const leadFreq = synthLead[(step * 2) % synthLead.length];
                     const leadOsc = audioCtx.createOscillator();
@@ -878,7 +938,6 @@
         } catch(e) {}
     }
 
-    // ЗВУК РАДОСТНОЙ ПОБЕДЫ
     function playWinSound() {
         if (!sfxEnabled) return;
         try {
@@ -899,14 +958,12 @@
                 osc.stop(now + index * 0.08 + 0.3);
             });
             
-            // Салют конфетти
             if (window.confetti) {
                 confetti({ particleCount: 70, spread: 60, origin: { y: 0.7 } });
             }
         } catch(e) {}
     }
 
-    // ЗВУК ПОРАЖЕНИЯ (ГРУСТНЫЙ УБЫВАЮЩИЙ АККОРД)
     function playSadLossSound() {
         if (!sfxEnabled) return;
         try {
@@ -929,7 +986,6 @@
         } catch(e) {}
     }
 
-    // ЗВУК ПОПОЛНЕНИЯ БАЛАНСА (ЗВОН ЗВЕЗД)
     function playDepositSuccessSound() {
         if (!sfxEnabled) return;
         try {
@@ -1085,10 +1141,10 @@
         { name: "Ракета", icon: "🚀", price: 50, giftId: "5170564780938756245" },
         { name: "Бриллиант", icon: "💎", price: 100, giftId: "5170521118301225164" },
         { name: "Кольцо", icon: "💍", price: 100, giftId: "5170690322832818290" },
-        { name: "Звезды 150", icon: "🌟", price: 150, giftId: null },
-        { name: "Звезды 200", icon: "✨", price: 200, giftId: null },
-        { name: "Звезды 250", icon: "💫", price: 250, giftId: null },
-        { name: "Звезды 300", icon: "👑", price: 300, giftId: null }
+        { name: "Звезды 150", icon: "🌟", price: 150, giftId: null, isStarPack: true },
+        { name: "Звезды 200", icon: "✨", price: 200, giftId: null, isStarPack: true },
+        { name: "Звезды 250", icon: "💫", price: 250, giftId: null, isStarPack: true },
+        { name: "Звезды 300", icon: "👑", price: 300, giftId: null, isStarPack: true }
     ];
 
     function getNumericPrice(giftName) {
@@ -1272,7 +1328,8 @@
         for (let i = 0; i < 40; i++) {
             let gift = giftsData[Math.floor(Math.random() * giftsData.length)];
             if (i === 25 && targetGift) gift = targetGift;
-            html += `<div class="roulette-item">${gift.icon}<span class="label">${gift.price ? gift.price + '⭐' : ''}</span></div>`;
+            let glowClass = (gift.price >= 150) ? ' star-item-glow' : '';
+            html += `<div class="roulette-item${glowClass}">${gift.icon}<span class="label">${gift.price ? gift.price + '⭐' : ''}</span></div>`;
         }
         track.innerHTML = html;
     }
@@ -1303,8 +1360,10 @@
                 inventory.forEach((item) => {
                     let div = document.createElement('div');
                     let isSelected = upgradeFromItems.some(i => i.uniqueId === item.uniqueId);
-                    div.className = 'inventory-item' + (isSelected ? ' selected-inv' : '');
                     let pVal = item.numericPrice || getNumericPrice(item.name);
+                    let glowClass = (pVal >= 150) ? ' star-item-glow' : '';
+
+                    div.className = 'inventory-item' + glowClass + (isSelected ? ' selected-inv' : '');
                     div.innerHTML = `${item.icon}<span class="item-name">${item.name} (${pVal}⭐)</span>`;
                     div.onclick = () => {
                         playClickSound();
@@ -1334,7 +1393,8 @@
             } else {
                 availableGifts.forEach((gift) => {
                     let div = document.createElement('div');
-                    div.className = 'inventory-item';
+                    let glowClass = (gift.price >= 150) ? ' star-item-glow' : '';
+                    div.className = 'inventory-item' + glowClass;
                     div.innerHTML = `${gift.icon}<span class="item-name">${gift.name} (${gift.price}⭐)</span>`;
                     div.onclick = () => {
                         upgradeToItem = gift;
@@ -1775,7 +1835,9 @@
         grid.innerHTML = '';
         inventory.forEach((item, index) => {
             const div = document.createElement('div');
-            div.className = 'inventory-item';
+            let pVal = item.numericPrice || getNumericPrice(item.name);
+            let glowClass = (pVal >= 150) ? ' star-item-glow' : '';
+            div.className = 'inventory-item' + glowClass;
             
             const uniqueKey = item.uniqueId || `${item.id}_${index}`;
             let itemEndMs = item.availableAt ? new Date(item.availableAt).getTime() : (Date.now() + 5 * 60 * 1000);
@@ -1793,8 +1855,6 @@
             } else {
                 actionButtonHtml = `<button class="withdraw-btn" id="wd-btn-${index}" onclick="withdrawGift(${index})">Вывести ↗</button>`;
             }
-
-            let pVal = item.numericPrice || getNumericPrice(item.name);
 
             div.innerHTML = `
                 ${item.icon}
