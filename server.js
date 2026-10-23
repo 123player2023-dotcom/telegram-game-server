@@ -23,7 +23,7 @@ app.get('/', (req, res) => {
 const BOT_TOKEN = process.env.BOT_TOKEN || '8661865774:AAFXJxBonUS_3H69-KMM2FIypPLTAuRlbxQ';
 const bot = new Telegraf(BOT_TOKEN);
 
-// Приветствие при старте бота (/start) с картинкой по ссылке с GitHub
+// Приветствие при старте бота (/start) с локальной картинкой (без внешних URL)
 bot.start(async (ctx) => {
     try {
         const welcomeText = 
@@ -41,15 +41,18 @@ bot.start(async (ctx) => {
 
 🎁  **Твой первый подарок уже ждет!** Нажми кнопку ниже, чтобы забрать стартовый бонус и сделать первый запуск!`;
 
-        await ctx.replyWithPhoto('https://raw.githubusercontent.com/123player2023-dotcom/telegram-game-server/main/welcome.jpg', {
-            caption: welcomeText,
-            parse_mode: 'Markdown',
-            reply_markup: {
-                inline_keyboard: [
-                    [{ text: '🎮 Play', web_app: { url: 'https://telegram-game-server.onrender.com' } }]
-                ]
+        await ctx.replyWithPhoto(
+            { source: path.join(__dirname, 'welcome.jpg') },
+            {
+                caption: welcomeText,
+                parse_mode: 'Markdown',
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: '🎮 Play', web_app: { url: 'https://telegram-game-server.onrender.com' } }]
+                    ]
+                }
             }
-        });
+        );
     } catch (e) {
         console.error('Ошибка отправки приветствия:', e);
     }
