@@ -765,7 +765,6 @@
     const SERVER_URL = 'https://telegram-game-server.onrender.com';
     const socket = io(SERVER_URL);
 
-    // Авторизация сокета на сервере сразу при подключении
     socket.on('connect', () => {
         socket.emit('login_socket', { telegramId: userId });
     });
@@ -796,7 +795,7 @@
     let userStars = 0;
     let inventory = [];
     let referralList = JSON.parse(localStorage.getItem('tg_ref_list') || '[]');
-    let paidCaseCount = parseInt(localStorage.getItem('tg_paid_case_count') || '0');
+    let lastFreeCaseTime = 0;
 
     function changeTheme(themeName) {
         playClickSound();
@@ -830,25 +829,14 @@
             if (data && data.stars !== undefined) {
                 userStars = data.stars;
                 inventory = data.inventory || [];
-                
-                localStorage.setItem('tg_stars', userStars);
-                localStorage.setItem('tg_inventory', JSON.stringify(inventory));
-                localStorage.setItem('tg_user_registered', 'true');
+                lastFreeCaseTime = data.lastFreeCaseTime || 0;
                 
                 updateBalanceUI();
                 renderInventory();
+                checkFreeCooldownUI();
             }
         } catch (e) {
-            if (localStorage.getItem('tg_stars') !== null) {
-                userStars = parseInt(localStorage.getItem('tg_stars'));
-            } else {
-                userStars = 0;
-                localStorage.setItem('tg_stars', '0');
-                localStorage.setItem('tg_user_registered', 'true');
-            }
-            inventory = JSON.parse(localStorage.getItem('tg_inventory') || '[]');
-            updateBalanceUI();
-            renderInventory();
+            console.warn('Ошибка синхронизации с сервером, используем кэш:', e);
         }
     }
     
@@ -883,89 +871,21 @@
         return found ? found.price : 0;
     }
 
-    function getPaidRandomItem() {
-        const rand = Math.random() * 100;
-        if (paidCaseCount < 2) {
-            if (rand < 15) return giftsData[0];
-            if (rand < 40) return giftsData[3];
-            if (rand < 70) return giftsData[5];
-            return giftsData[8];
+    function checkFreeCooldownUI() {
+        if (currentMode !== 'free') return;
+        const spinBtn = document.getElementById('spin-btn');
+        let now = Date.now();
+        let cooldown = 24 * 60 * 60 * 1000;
+        if (now - lastFreeCaseTime < cooldown) {
+            spinBtn.disabled = true;
+            let remaining = Math.ceil((cooldown - (now - lastFreeTime)) / 1000);
+            let hours = Math.floor(remaining / 3600);
+            let mins = Math.floor((remaining % 3600) / 60);
+            spinBtn.innerText = `Доступно через ${hours}ч ${mins}м`;
         } else {
-            if (rand < 50) return giftsData[0];
-            if (rand < 62.5) return giftsData[1];
-            if (rand < 75) return giftsData[2];
-            if (rand < 82.5) return giftsData[3];
-            if (rand < 90) return giftsData[4];
-            if (rand < 94.5) return giftsData[5];
-            if (rand < 99) return giftsData[6];
-            if (rand < 99.5) return giftsData[7];
-            return giftsData[8];
+            spinBtn.disabled = false;
+            spinBtn.innerText = 'Крутить Бесплатно';
         }
-    }
-
-    function getPaid50RandomItem() {
-        const rand = Math.random() * 100;
-        if (rand < 30) return giftsData[0]; 
-        if (rand < 44) return giftsData[1]; 
-        if (rand < 58) return giftsData[2]; 
-        if (rand < 65) return giftsData[3]; 
-        if (rand < 72) return giftsData[4]; 
-        if (rand < 83) return giftsData[5]; 
-        if (rand < 93) return giftsData[6]; 
-        if (rand < 98) return giftsData[7]; 
-        if (rand < 99.3) return giftsData[8]; 
-        if (rand < 99.8) return giftsData[9]; 
-        return giftsData[10]; 
-    }
-
-    function getPaid100RandomItem() {
-        const rand = Math.random() * 100;
-        if (rand < 15) return giftsData[1];
-        if (rand < 30) return giftsData[2];
-        if (rand < 45) return giftsData[3];
-        if (rand < 60) return giftsData[4];
-        if (rand < 75) return giftsData[5];
-        if (rand < 90) return giftsData[6];
-        if (rand < 94) return giftsData[7];
-        if (rand < 98) return giftsData[8];
-        if (rand < 99) return giftsData[9];
-        if (rand < 99.5) return giftsData[11];
-        return giftsData[12];
-    }
-
-    function getVisual50RandomItem() {
-        const rand = Math.random() * 100;
-        if (rand < 12) return giftsData[9];
-        if (rand < 22) return giftsData[11];
-        return getPaid50RandomItem();
-    }
-
-    function getVisual100RandomItem() {
-        const rand = Math.random() * 100;
-        if (rand < 15) return giftsData[9];
-        if (rand < 27) return giftsData[11];
-        if (rand < 37) return giftsData[12];
-        return getPaid100RandomItem();
-    }
-
-    function getFreeRandomItem() {
-        const rand = Math.random() * 100;
-        if (rand < 85) return giftsData[0];
-        if (rand < 93) return giftsData[1];
-        if (rand < 98) return giftsData[2];
-        return giftsData[3];
-    }
-
-    function getVisualTrackItem() {
-        if (currentMode === 'paid50') return getVisual50RandomItem();
-        if (currentMode === 'paid100') return getVisual100RandomItem();
-        return getRandomItem();
-    }
-
-    function getRandomItem() {
-        if (currentMode === 'paid50') return getPaid50RandomItem();
-        if (currentMode === 'paid100') return getPaid100RandomItem();
-        return currentMode === 'paid' ? getPaidRandomItem() : getFreeRandomItem();
     }
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -1071,19 +991,9 @@
         if (mode === 'paid') spinBtn.innerText = 'Крутить 25 ⭐';
         if (mode === 'paid50') spinBtn.innerText = 'Крутить 50 ⭐';
         if (mode === 'paid100') spinBtn.innerText = 'Крутить 100 ⭐';
-        if (mode === 'free') spinBtn.innerText = 'Крутить Бесплатно';
-
         if (mode === 'free') {
-            let lastFreeTime = parseInt(localStorage.getItem('tg_last_free_time') || '0');
-            let now = Date.now();
-            let cooldown = 24 * 60 * 60 * 1000;
-            if (now - lastFreeTime < cooldown) {
-                spinBtn.disabled = true;
-                let remaining = Math.ceil((cooldown - (now - lastFreeTime)) / 1000);
-                let hours = Math.floor(remaining / 3600);
-                let mins = Math.floor((remaining % 3600) / 60);
-                spinBtn.innerText = `Доступно через ${hours}ч ${mins}м`;
-            }
+            spinBtn.innerText = 'Крутить Бесплатно';
+            checkFreeCooldownUI();
         }
         buildTrack('roulette-track');
     }
@@ -1134,7 +1044,7 @@
         
         let html = '';
         for (let i = 0; i < 40; i++) {
-            let gift = getVisualTrackItem();
+            let gift = giftsData[Math.floor(Math.random() * giftsData.length)];
             if (i === 25 && targetGift) gift = targetGift;
             html += `<div class="roulette-item">${gift.icon}<span class="label">${gift.price ? gift.price + '⭐' : ''}</span></div>`;
         }
@@ -1292,7 +1202,7 @@
         playCallSpin();
     }
 
-    function playCallSpin() {
+    async function playCallSpin() {
         playClickSound();
         const activeScreen = document.querySelector('.screen.active').id;
 
@@ -1303,15 +1213,49 @@
 
         if (isSpinning) return;
 
-        if (activeScreen === 'screen-cases' && currentMode === 'free') {
-            let lastFreeTime = parseInt(localStorage.getItem('tg_last_free_time') || '0');
-            let now = Date.now();
-            let cooldown = 24 * 60 * 60 * 1000;
-            if (now - lastFreeTime < cooldown) {
-                showModal('⏳', 'Кулдаун', 'Бесплатный кейс можно открывать только раз в 24 часа!', false, false);
+        // Открытие кейса через защищенный серверный эндпоинт
+        if (activeScreen === 'screen-cases') {
+            let cost = 25;
+            if (currentMode === 'paid50') cost = 50;
+            if (currentMode === 'paid100') cost = 100;
+            if (currentMode === 'free') cost = 0;
+
+            if (currentMode !== 'free' && userStars < cost) {
+                showModal('⭐', 'Недостаточно звезд', `Для открытия кейса требуется ${cost} ⭐.`, false, false);
                 return;
             }
-            localStorage.setItem('tg_last_free_time', now);
+
+            isSpinning = true;
+            document.getElementById('spin-btn').disabled = true;
+
+            try {
+                const res = await fetch(`${SERVER_URL}/api/open-case`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ telegramId: userId, mode: currentMode })
+                });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    isSpinning = false;
+                    document.getElementById('spin-btn').disabled = false;
+                    showModal('⚠️', 'Ошибка', data.error || 'Не удалось открыть кейс', false, false);
+                    return;
+                }
+
+                userStars = data.stars;
+                inventory = data.inventory;
+                lastFreeCaseTime = data.lastFreeCaseTime;
+                updateBalanceUI();
+                renderInventory();
+
+                executeSingleSpin(data.winningItem);
+            } catch (e) {
+                isSpinning = false;
+                document.getElementById('spin-btn').disabled = false;
+                showModal('❌', 'Ошибка сети', 'Не удалось связаться с сервером. Попробуйте еще раз.', false, false);
+            }
+            return;
         }
 
         if (activeScreen === 'screen-upgrade') {
@@ -1389,25 +1333,6 @@
             return;
         }
 
-        if (activeScreen === 'screen-cases') {
-            let cost = 25;
-            if (currentMode === 'paid50') cost = 50;
-            if (currentMode === 'paid100') cost = 100;
-
-            if (userStars < cost) {
-                showModal('⭐', 'Недостаточно звезд', `Для открытия кейса требуется ${cost} ⭐.`, false, false);
-                return;
-            }
-            userStars -= cost;
-            if (currentMode === 'paid') {
-                paidCaseCount++;
-                localStorage.setItem('tg_paid_case_count', paidCaseCount);
-            }
-            updateBalance();
-            executeSingleSpin(getRandomItem());
-            return;
-        }
-
         if (activeScreen === 'screen-duel') {
             let inputVal = myChosenBet;
             const spinBtnEl = document.getElementById('duel-spin-btn');
@@ -1449,7 +1374,7 @@
     function cancelDuelSearch() {
         if (!isSearchingDuel) return;
         isSearchingDuel = false;
-        socket.emit('cancel_duel'); // Оповещаем сервер об отмене
+        socket.emit('cancel_duel');
         resetDuelInterfaceToDefault();
         syncWithServer();
     }
@@ -1534,8 +1459,6 @@
     }
 
     function executeSingleSpin(winningGift) {
-        isSpinning = true;
-        document.getElementById('spin-btn').disabled = true;
         buildTrack('roulette-track', winningGift);
 
         const track = document.getElementById('roulette-track');
@@ -1560,18 +1483,8 @@
             isSpinning = false;
             document.getElementById('spin-btn').disabled = false;
             playWinSound();
-            let numericP = getNumericPrice(winningGift.name);
+            let numericP = winningGift.price;
             let isNothing = (numericP === 0);
-            
-            if (!isNothing) {
-                const uniqueId = Date.now() + Math.random();
-                const lockoutTime = Date.now() + 5 * 60 * 1000;
-                inventory.push({ 
-                    ...winningGift, uniqueId: uniqueId, 
-                    numericPrice: numericP, giftId: winningGift.giftId, availableAt: new Date(lockoutTime)
-                });
-                saveInventory();
-            }
             
             if (!isNothing && !winningGift.giftId) {
                 showModal(winningGift.icon, `Выиграно: ${winningGift.name}!`, `Данный предмет можно будет вывести в последующем обновлении или продать прямо сейчас!`, false, true);
@@ -1807,7 +1720,6 @@
         }
     }
 
-    // [ИСПРАВЛЕНИЕ]: Безопасное пополнение через серверный вебхук
     async function buyStarsWithTelegram(amount) {
         playClickSound();
         showModal('⏳', 'Создание счета...', 'Подождите, связываемся с сервером...', false, false);
@@ -1832,7 +1744,6 @@
                 if (tg && tg.openInvoice) {
                     tg.openInvoice(data.invoiceLink, async (status) => {
                         if (status === 'paid') {
-                            // Ожидаем вебхук от сервера (сервер сам начислит и пришлет balance_updated)
                             showModal('⭐', 'Оплата прошла!', `Счет успешно оплачен. Зачисляем ${amount} ⭐...`, false, true);
                             await syncWithServer();
                         } else {
