@@ -4,6 +4,7 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 const { Telegraf } = require('telegraf');
 const mongoose = require('mongoose');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
@@ -13,12 +14,16 @@ const io = new Server(server, {
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(__dirname)); // Раздача файлов игры (фронтенда) из корня проекта
+
+// Явная отправка файла игры при обращении к корню сайта
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 const BOT_TOKEN = process.env.BOT_TOKEN || '8661865774:AAFXJxBonUS_3H69-KMM2FIypPLTAuRlbxQ';
 const bot = new Telegraf(BOT_TOKEN);
 
-// Приветствие при старте бота (/start) с картинкой по file_id и форматированием
+// Приветствие при старте бота (/start) с картинкой по ссылке с GitHub
 bot.start(async (ctx) => {
     try {
         const welcomeText = 
@@ -36,7 +41,7 @@ bot.start(async (ctx) => {
 
 🎁  **Твой первый подарок уже ждет!** Нажми кнопку ниже, чтобы забрать стартовый бонус и сделать первый запуск!`;
 
-        await ctx.replyWithPhoto('AgACAgIAAxkBAAEjyEhq2j7rbOq6UDcEwkIjlMBq5hPirQACgR5rG-ds0UpLN9VnQklxpwEAAwIAA3kAAz0E', {
+        await ctx.replyWithPhoto('https://raw.githubusercontent.com/123player2023-dotcom/telegram-game-server/main/welcome.jpg', {
             caption: welcomeText,
             parse_mode: 'Markdown',
             reply_markup: {
@@ -59,11 +64,11 @@ bot.on('successful_payment', async (ctx) => {
         const payment = ctx.update?.message?.successful_payment || ctx.message?.successful_payment;
         if (!payment) return;
 
-        const payload = payment.invoice_payload; // формат: deposit_telegramId_timestamp
+        const payload = payment.invoice_payload;
         const parts = payload.split('_');
         
         if (parts[0] === 'deposit') {
-            const telegramId = String(parts[1]); // Приводим к строке
+            const telegramId = String(parts[1]);
             const starsPaid = payment.total_amount; 
 
             let user = await UserModel.findOne({ telegramId });
@@ -71,7 +76,6 @@ bot.on('successful_payment', async (ctx) => {
                 user.stars += starsPaid;
                 await user.save();
                 
-                // Уведомляем клиента через сокет об обновлении баланса
                 io.sockets.sockets.forEach((socket) => {
                     if (socket.telegramId === telegramId) {
                         socket.emit('balance_updated', { stars: user.stars });
