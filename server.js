@@ -89,7 +89,21 @@ bot.on('successful_payment', async (ctx) => {
     }
 });
 
-bot.launch().catch(err => console.error('Ошибка запуска Telegraf бота:', err));
+// Принудительный сброс старых вебхуков и запуск бота
+bot.telegram.deleteWebhook({ drop_pending_updates: true })
+    .then(() => {
+        console.log('🧹 Старый Webhook успешно сброшен');
+        return bot.launch();
+    })
+    .then(() => {
+        console.log('🤖 Бот успешно запущен и слушает команды!');
+    })
+    .catch(err => {
+        console.error('🔴 Ошибка запуска Telegraf бота:', err);
+    });
+
+process.once('SIGINT', () => bot.stop('SIGINT'));
+process.once('SIGTERM', () => bot.stop('SIGTERM'));
 
 const MONGO_URI = process.env.MONGO_URI;
 
