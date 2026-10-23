@@ -129,7 +129,6 @@ async function connectDB() {
 }
 connectDB();
 
-// Список всех доступных подарков для сервера
 const giftsData = [
     { name: "Ничего", icon: "❌", price: 0, giftId: null },
     { name: "Сердце", icon: "💖", price: 15, giftId: "5170145012310081615" },
@@ -228,7 +227,6 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// Защищенный серверный эндпоинт для открытия кейсов
 app.post('/api/open-case', async (req, res) => {
     try {
         const { telegramId, mode } = req.body;
