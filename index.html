@@ -113,7 +113,6 @@
             --echo-color: rgba(79, 70, 229, 0.3);
         }
 
-        /* СТИЛИЗАЦИЯ СКРОЛЛБАРА */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -152,7 +151,6 @@
         body { display: flex; justify-content: center; align-items: center; }
         .app-container { width: 100vw; height: 100dvh; background: var(--bg-container); display: flex; flex-direction: column; position: relative; overflow: hidden; padding-top: env(safe-area-inset-top); transition: background 0.3s ease; }
 
-        /* АНИМИРОВАННЫЙ ФОН */
         .bg-floating-icons {
             position: absolute;
             inset: 0;
@@ -181,9 +179,6 @@
         .balance-box { background: var(--input-bg); border: 1px solid var(--border-color); padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; color: #fbbf24; display: flex; align-items: center; gap: 5px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
         .add-stars-btn { background: var(--accent-gradient); color: #fff; border: none; width: 30px; height: 30px; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px var(--echo-color); position: relative; overflow: hidden; }
 
-        /* =========================================================
-           МЯГКИЕ И СГЛАЖЕННЫЕ БЛИКИ НА КНОПКАХ И РАМОЧКАХ
-           ========================================================= */
         button, .mode-card-btn, .switch-tab, .inventory-item, .theme-option, .toggle-switch {
             position: relative;
             transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s ease, background 0.2s ease;
@@ -191,7 +186,6 @@
             overflow: hidden;
         }
 
-        /* Медленный, мягкий, сильно размытый диагональный блик */
         button::before, .mode-card-btn::before, .switch-tab::before {
             content: '';
             position: absolute;
@@ -246,7 +240,6 @@
             100% { opacity: 0; transform: scale(1.25); box-shadow: 0 0 20px 12px transparent; }
         }
 
-        /* МЯГКИЕ СТЕКЛЯННЫЕ РАМОЧКИ ДЛЯ ИКОНОК И КЕЙСОВ */
         .mode-icon-box, .roulette-item, .inventory-item, .upgrade-slot {
             background: rgba(255, 255, 255, 0.02);
             backdrop-filter: blur(10px);
@@ -256,7 +249,6 @@
             position: relative;
         }
 
-        /* Очень плавная верхняя стеклянная фаска */
         .mode-icon-box::after, .inventory-item::after {
             content: '';
             position: absolute;
@@ -267,9 +259,6 @@
             pointer-events: none;
         }
 
-        /* =========================================================
-           ПЛАВНОЕ И НЕЖНОЕ ЗВЕЗДНОЕ СВЕЧЕНИЕ (150, 200, 250, 300)
-           ========================================================= */
         .star-item-glow {
             position: relative;
             border: 1px solid rgba(251, 191, 36, 0.5) !important;
@@ -294,7 +283,7 @@
             }
         }
 
-        .content { flex: 1; position: relative; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 14px; z-index: 1; }
+        .content { flex: 1; position: relative; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px; z-index: 1; }
         .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; animation: fadeIn 0.25s ease; }
         .screen.active { display: flex; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
@@ -316,9 +305,9 @@
         .mode-desc { font-size: 11px; color: var(--text-muted); }
         .mode-arrow { font-size: 16px; color: var(--accent-color); font-weight: bold; }
 
-        .back-to-menu-row { width: 100%; max-width: 400px; display: flex; justify-content: flex-start; margin-bottom: 10px; }
+        .back-to-menu-row { width: 100%; max-width: 400px; display: flex; justify-content: flex-start; margin-bottom: 8px; }
         .back-circle-btn { 
-            width: 38px; height: 38px; background: var(--card-bg); border: 1px solid var(--border-color); 
+            width: 36px; height: 36px; background: var(--card-bg); border: 1px solid var(--border-color); 
             color: var(--text-main); border-radius: 12px; font-size: 18px; font-weight: bold; 
             cursor: pointer; display: flex; align-items: center; justify-content: center;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
@@ -338,7 +327,7 @@
         .roulette-item { min-width: 75px; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 26px; }
         .roulette-item span.label { font-size: 9px; color: var(--text-muted); margin-top: 3px; font-weight: 600; }
         
-        .btn { background: var(--accent-gradient); color: white; border: none; padding: 13px 20px; border-radius: 14px; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; cursor: pointer; width: 100%; margin-top: 10px; box-shadow: 0 6px 16px var(--echo-color); }
+        .btn { background: var(--accent-gradient); color: white; border: none; padding: 11px 16px; border-radius: 12px; font-size: 13px; font-weight: 700; letter-spacing: 0.3px; cursor: pointer; width: 100%; margin-top: 6px; box-shadow: 0 6px 16px var(--echo-color); }
         .btn:disabled { background: #3f3f46; cursor: not-allowed; opacity: 0.6; box-shadow: none; }
         .btn.cancel-mode { background: linear-gradient(135deg, #ef4444, #dc2626) !important; box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3); }
         
@@ -356,39 +345,79 @@
         .inventory-item span.item-name { font-size: 11px; color: var(--text-muted); margin-top: 4px; font-weight: 600; }
         .empty-inv { color: var(--text-muted); font-size: 13px; text-align: center; grid-column: span 3; padding: 40px 10px; font-weight: 500; }
         
-        /* КАРТОЧКА ПРОФИЛЯ С ФИОЛЕТОВОЙ НЕОНОВОЙ РАМКОЙ */
+        /* =========================================================
+           ОПТИМИЗИРОВАННЫЙ ПРОФИЛЬ (БЕЗ СКРОЛЛА) + РАМКА ДЛЯ НИКНЕЙМА
+           ========================================================= */
         .profile-card { 
             background: var(--card-bg); 
-            border: 2px solid #a855f7; 
-            border-radius: 20px; 
-            padding: 20px; 
+            border: none; 
+            border-radius: 18px; 
+            padding: 12px 16px; 
             max-width: 400px; 
             width: 100%; 
             display: flex; 
             flex-direction: column; 
-            gap: 12px; 
-            box-shadow: 0 0 20px rgba(168, 85, 247, 0.35), inset 0 0 12px rgba(168, 85, 247, 0.15);
+            gap: 8px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
         }
 
-        .input-group { display: flex; flex-direction: column; gap: 5px; text-align: left; }
-        .input-group label { font-size: 11px; color: var(--text-muted); font-weight: 600; }
-        .input-row { display: flex; gap: 8px; }
-        .input-group input { background: var(--input-bg); border: 1px solid var(--input-border); padding: 10px 12px; border-radius: 10px; color: var(--text-main); font-size: 13px; flex: 1; outline: none; }
-        .copy-btn { background: var(--card-bg); color: var(--accent-color); border: 1px solid var(--border-color); padding: 0 14px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; }
-        .link-btn { background: var(--card-bg); color: var(--accent-color); padding: 12px; border-radius: 10px; text-align: center; font-size: 13px; font-weight: 700; border: 1px solid var(--border-color); cursor: pointer; }
-        .admin-btn { background: var(--card-bg); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 10px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; text-align: center; }
+        /* Неоновая фиолетовая рамка для редактирования имени пользователя вместо заголовка */
+        .cyber-username-container {
+            position: relative;
+            background: linear-gradient(135deg, #181422 0%, #0d0c14 100%);
+            border: 2px solid #a855f7;
+            border-radius: 12px;
+            padding: 10px 14px;
+            box-shadow: 0 0 14px rgba(168, 85, 247, 0.35), inset 0 0 8px rgba(168, 85, 247, 0.15);
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
         
-        .setting-row { display: flex; justify-content: space-between; align-items: center; background: var(--input-bg); border: 1px solid var(--border-color); padding: 12px 14px; border-radius: 12px; font-size: 13px; font-weight: 600; }
-        .toggle-switch { width: 50px; height: 26px; background-color: var(--input-border); border-radius: 13px; position: relative; cursor: pointer; transition: background-color 0.25s ease; display: flex; align-items: center; padding: 2px; }
+        .cyber-username-container label {
+            font-size: 10px;
+            color: #d8b4fe;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .cyber-username-input-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .cyber-username-container input {
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 700;
+            flex: 1;
+            outline: none;
+            padding: 2px 0;
+        }
+
+        .input-group { display: flex; flex-direction: column; gap: 3px; text-align: left; }
+        .input-group label { font-size: 10px; color: var(--text-muted); font-weight: 600; }
+        .input-row { display: flex; gap: 6px; }
+        .input-group input { background: var(--input-bg); border: 1px solid var(--input-border); padding: 8px 10px; border-radius: 8px; color: var(--text-main); font-size: 12px; flex: 1; outline: none; }
+        .copy-btn { background: var(--card-bg); color: var(--accent-color); border: 1px solid var(--border-color); padding: 0 12px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; }
+        .link-btn { background: var(--card-bg); color: var(--accent-color); padding: 9px; border-radius: 10px; text-align: center; font-size: 12px; font-weight: 700; border: 1px solid var(--border-color); cursor: pointer; }
+        .admin-btn { background: var(--card-bg); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 8px; border-radius: 10px; font-size: 11px; font-weight: 700; cursor: pointer; text-align: center; }
+        
+        .setting-row { display: flex; justify-content: space-between; align-items: center; background: var(--input-bg); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+        .toggle-switch { width: 44px; height: 24px; background-color: var(--input-border); border-radius: 12px; position: relative; cursor: pointer; transition: background-color 0.25s ease; display: flex; align-items: center; padding: 2px; }
         .toggle-switch.active { background-color: #22c55e; }
-        .toggle-ball { width: 22px; height: 22px; background-color: #ffffff; border-radius: 50%; position: absolute; left: 2px; transition: transform 0.25s cubic-bezier(0.15, 0.85, 0.2, 1); }
-        .toggle-switch.active .toggle-ball { transform: translateX(24px); }
+        .toggle-ball { width: 20px; height: 20px; background-color: #ffffff; border-radius: 50%; position: absolute; left: 2px; transition: transform 0.25s cubic-bezier(0.15, 0.85, 0.2, 1); }
+        .toggle-switch.active .toggle-ball { transform: translateX(20px); }
         
-        .theme-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 4px; }
-        .theme-option { background: var(--input-bg); border: 2px solid var(--border-color); border-radius: 12px; padding: 8px 4px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
-        .theme-option.active { border-color: var(--accent-color); background: rgba(139, 92, 246, 0.12); box-shadow: 0 0 10px var(--echo-color); }
-        .theme-preview-circle { width: 24px; height: 24px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); }
-        .theme-name { font-size: 9px; color: var(--text-muted); font-weight: 700; text-align: center; }
+        .theme-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 2px; }
+        .theme-option { background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 6px 2px; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; }
+        .theme-option.active { border-color: var(--accent-color); background: rgba(139, 92, 246, 0.12); box-shadow: 0 0 8px var(--echo-color); }
+        .theme-preview-circle { width: 20px; height: 20px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); }
+        .theme-name { font-size: 8px; color: var(--text-muted); font-weight: 700; text-align: center; }
 
         .deposit-options { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
         .deposit-option-btn { background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 12px; border-radius: 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
@@ -442,7 +471,6 @@
 <body>
 
 <div class="app-container">
-    <!-- ДИНАМИЧЕСКИЙ АНИМИРОВАННЫЙ ФОН -->
     <div class="bg-floating-icons" id="bg-floating-container"></div>
 
     <div class="header">
@@ -671,9 +699,17 @@
         </div>
 
         <div class="screen" id="screen-profile">
-            <!-- КАРТОЧКА ПРОФИЛЯ С ФИОЛЕТОВОЙ НЕОНОВОЙ РАМКОЙ -->
+            <!-- ОПТИМИЗИРОВАННЫЙ ПРОФИЛЬ БЕЗ СКРОЛЛА -->
             <div class="profile-card">
-                <h2>👤 Профиль игрока</h2>
+                
+                <!-- Заменено: вместо "Профиль игрока" теперь поле ввода никнейма в фиолетовой неоновой рамке (до 16 символов) -->
+                <div class="cyber-username-container">
+                    <label>👤 Имя пользователя (до 16 символов)</label>
+                    <div class="cyber-username-input-row">
+                        <input type="text" id="profile-name-input" maxlength="16" placeholder="Введите имя">
+                    </div>
+                </div>
+
                 <div class="input-group">
                     <label>Telegram ID</label>
                     <div class="input-row">
@@ -681,13 +717,8 @@
                         <button class="copy-btn" onclick="copyToClipboard('profile-id-input')">📋</button>
                     </div>
                 </div>
-                <div class="input-group">
-                    <label>Имя пользователя</label>
-                    <div class="input-row">
-                        <input type="text" id="profile-name-input" placeholder="Введите имя">
-                    </div>
-                </div>
-                <button class="btn" onclick="saveProfile()">Сохранить имя</button>
+
+                <button class="btn" onclick="saveProfile()" style="margin-top: 2px;">Сохранить имя</button>
 
                 <div class="input-group">
                     <label>🎨 Оформление интерфейса</label>
@@ -729,8 +760,10 @@
                     </div>
                 </div>
 
-                <div onclick="openExternalUrl('https://t.me/helpGiveGift_bot')" class="link-btn">💬 Написать в техподдержку</div>
-                <div onclick="requestAdminAuth()" class="admin-btn">⚙️ Панель Администратора</div>
+                <div style="display: flex; gap: 6px; margin-top: 2px;">
+                    <div onclick="openExternalUrl('https://t.me/helpGiveGift_bot')" class="link-btn" style="flex: 2;">💬 Техподдержка</div>
+                    <div onclick="requestAdminAuth()" class="admin-btn" style="flex: 1;">⚙️ Админ</div>
+                </div>
             </div>
         </div>
     </div>
@@ -2096,6 +2129,8 @@
     function saveProfile() {
         playClickSound();
         username = document.getElementById('profile-name-input').value || 'Игрок';
+        if (username.length > 16) username = username.slice(0, 16);
+        document.getElementById('profile-name-input').value = username;
         localStorage.setItem('tg_username', username);
         document.getElementById('header-username').innerText = '🎁 ' + username;
         showModal('✅', 'Успешно!', 'Имя пользователя обновлено.', false, false);
