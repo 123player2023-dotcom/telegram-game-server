@@ -15,7 +15,6 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json());
 
-// Явная отправка файла игры при обращении к корню сайта
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -23,7 +22,6 @@ app.get('/', (req, res) => {
 const BOT_TOKEN = process.env.BOT_TOKEN || '8661865774:AAFXJxBonUS_3H69-KMM2FIypPLTAuRlbxQ';
 const bot = new Telegraf(BOT_TOKEN);
 
-// Приветствие при старте бота (/start) с локальной картинкой (без внешних URL)
 bot.start(async (ctx) => {
     try {
         const welcomeText = 
@@ -58,10 +56,8 @@ bot.start(async (ctx) => {
     }
 });
 
-// Обработка пре-чекаута Telegram Stars
 bot.on('pre_checkout_query', (ctx) => ctx.answerPreCheckoutQuery(true));
 
-// Безопасная обработка успешного платежа
 bot.on('successful_payment', async (ctx) => {
     try {
         const payment = ctx.update?.message?.successful_payment || ctx.message?.successful_payment;
@@ -92,7 +88,6 @@ bot.on('successful_payment', async (ctx) => {
     }
 });
 
-// Принудительный сброс старых вебхуков и запуск бота
 bot.telegram.deleteWebhook({ drop_pending_updates: true })
     .then(() => {
         console.log('🧹 Старый Webhook успешно сброшен');
@@ -114,7 +109,9 @@ let UserSchema = new mongoose.Schema({
     telegramId: { type: String, unique: true, required: true },
     username: String,
     stars: { type: Number, default: 0 },
-    inventory: { type: Array, default: [] }
+    inventory: { type: Array, default: [] },
+    lastFreeCaseTime: { type: Number, default: 0 },
+    paidCaseCount: { type: Number, default: 0 }
 });
 let UserModel = mongoose.model('User', UserSchema);
 
@@ -132,6 +129,81 @@ async function connectDB() {
 }
 connectDB();
 
+// Список всех доступных подарков для сервера
+const giftsData = [
+    { name: "Ничего", icon: "❌", price: 0, giftId: null },
+    { name: "Сердце", icon: "💖", price: 15, giftId: "5170145012310081615" },
+    { name: "Мишка", icon: "🧸", price: 15, giftId: "5170233102089322756" },
+    { name: "Подарочек", icon: "🎁", price: 25, giftId: "5170250947678437525" },
+    { name: "Букет", icon: "💐", price: 25, giftId: "5168103777563050263" },
+    { name: "Шампанское", icon: "🍾", price: 50, giftId: "6028601630662853006" },
+    { name: "Ракета", icon: "🚀", price: 50, giftId: "5170564780938756245" },
+    { name: "Бриллиант", icon: "💎", price: 100, giftId: "5170521118301225164" },
+    { name: "Кольцо", icon: "💍", price: 100, giftId: "5170690322832818290" },
+    { name: "Звезды 150", icon: "🌟", price: 150, giftId: null },
+    { name: "Звезды 200", icon: "✨", price: 200, giftId: null },
+    { name: "Звезды 250", icon: "💫", price: 250, giftId: null },
+    { name: "Звезды 300", icon: "👑", price: 300, giftId: null }
+];
+
+function getPaidRandomItem(paidCount) {
+    const rand = Math.random() * 100;
+    if (paidCount < 2) {
+        if (rand < 15) return giftsData[0];
+        if (rand < 40) return giftsData[3];
+        if (rand < 70) return giftsData[5];
+        return giftsData[8];
+    } else {
+        if (rand < 50) return giftsData[0];
+        if (rand < 62.5) return giftsData[1];
+        if (rand < 75) return giftsData[2];
+        if (rand < 82.5) return giftsData[3];
+        if (rand < 90) return giftsData[4];
+        if (rand < 94.5) return giftsData[5];
+        if (rand < 99) return giftsData[6];
+        if (rand < 99.5) return giftsData[7];
+        return giftsData[8];
+    }
+}
+
+function getPaid50RandomItem() {
+    const rand = Math.random() * 100;
+    if (rand < 30) return giftsData[0]; 
+    if (rand < 44) return giftsData[1]; 
+    if (rand < 58) return giftsData[2]; 
+    if (rand < 65) return giftsData[3]; 
+    if (rand < 72) return giftsData[4]; 
+    if (rand < 83) return giftsData[5]; 
+    if (rand < 93) return giftsData[6]; 
+    if (rand < 98) return giftsData[7]; 
+    if (rand < 99.3) return giftsData[8]; 
+    if (rand < 99.8) return giftsData[9]; 
+    return giftsData[10]; 
+}
+
+function getPaid100RandomItem() {
+    const rand = Math.random() * 100;
+    if (rand < 15) return giftsData[1];
+    if (rand < 30) return giftsData[2];
+    if (rand < 45) return giftsData[3];
+    if (rand < 60) return giftsData[4];
+    if (rand < 75) return giftsData[5];
+    if (rand < 90) return giftsData[6];
+    if (rand < 94) return giftsData[7];
+    if (rand < 98) return giftsData[8];
+    if (rand < 99) return giftsData[9];
+    if (rand < 99.5) return giftsData[11];
+    return giftsData[12];
+}
+
+function getFreeRandomItem() {
+    const rand = Math.random() * 100;
+    if (rand < 85) return giftsData[0];
+    if (rand < 93) return giftsData[1];
+    if (rand < 98) return giftsData[2];
+    return giftsData[3];
+}
+
 app.post('/api/login', async (req, res) => {
     try {
         const { telegramId, username } = req.body;
@@ -140,15 +212,86 @@ app.post('/api/login', async (req, res) => {
         const tIdStr = String(telegramId);
         let user = await UserModel.findOne({ telegramId: tIdStr });
         if (!user) {
-            user = new UserModel({ telegramId: tIdStr, username: username || 'Игрок', stars: 0, inventory: [] });
+            user = new UserModel({ telegramId: tIdStr, username: username || 'Игрок', stars: 0, inventory: [], lastFreeCaseTime: 0, paidCaseCount: 0 });
             await user.save();
         } else if (username && user.username !== username) {
             user.username = username;
             await user.save();
         }
-        res.json({ stars: user.stars, inventory: user.inventory });
+        res.json({ 
+            stars: user.stars, 
+            inventory: user.inventory, 
+            lastFreeCaseTime: user.lastFreeCaseTime 
+        });
     } catch (e) {
         res.status(500).json({ error: e.message });
+    }
+});
+
+// Защищенный серверный эндпоинт для открытия кейсов
+app.post('/api/open-case', async (req, res) => {
+    try {
+        const { telegramId, mode } = req.body;
+        const tIdStr = String(telegramId);
+        let user = await UserModel.findOne({ telegramId: tIdStr });
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        let cost = 25;
+        if (mode === 'paid50') cost = 50;
+        else if (mode === 'paid100') cost = 100;
+        else if (mode === 'free') cost = 0;
+
+        let winningItem;
+
+        if (mode === 'free') {
+            const now = Date.now();
+            const cooldown = 24 * 60 * 60 * 1000;
+            if (now - user.lastFreeCaseTime < cooldown) {
+                return res.status(400).json({ error: 'Кулдаун бесплатного кейса еще не истек!' });
+            }
+            user.lastFreeCaseTime = now;
+            winningItem = getFreeRandomItem();
+        } else {
+            if (user.stars < cost) {
+                return res.status(400).json({ error: 'Недостаточно звезд на балансе!' });
+            }
+            user.stars -= cost;
+
+            if (mode === 'paid') {
+                user.paidCaseCount += 1;
+                winningItem = getPaidRandomItem(user.paidCaseCount);
+            } else if (mode === 'paid50') {
+                winningItem = getPaid50RandomItem();
+            } else if (mode === 'paid100') {
+                winningItem = getPaid100RandomItem();
+            }
+        }
+
+        const uniqueId = Date.now() + Math.random();
+        const lockoutTime = Date.now() + 5 * 60 * 1000;
+        const numericPrice = winningItem.price;
+
+        if (numericPrice > 0) {
+            user.inventory.push({
+                ...winningItem,
+                uniqueId,
+                numericPrice,
+                availableAt: new Date(lockoutTime)
+            });
+        }
+
+        await user.save();
+
+        res.json({
+            success: true,
+            stars: user.stars,
+            inventory: user.inventory,
+            winningItem,
+            lastFreeCaseTime: user.lastFreeCaseTime
+        });
+    } catch (e) {
+        console.error('Ошибка открытия кейса:', e);
+        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
     }
 });
 
