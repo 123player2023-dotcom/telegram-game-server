@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Telegram Gift Case Game</title>
+    <title>GiveGift - Telegram Mini App</title>
     
     <script>
         (function() {
@@ -15,23 +15,26 @@
 
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://telegram-game-server.onrender.com/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
     <style>
         html.theme-dark, body.theme-dark {
-            --bg-html: #0f0f11;
-            --bg-container: #18181b;
-            --bg-header: #202024;
-            --border-color: #27272a;
+            --bg-html: #0d0d11;
+            --bg-container: #13131a;
+            --bg-header: #1a1a24;
+            --border-color: #272738;
             --text-main: #ffffff;
-            --text-muted: #a1a1aa;
-            --card-bg: #202024;
+            --text-muted: #8e8ea0;
+            --card-bg: #1a1a26;
             --accent-color: #8b5cf6;
-            --accent-gradient: linear-gradient(135deg, #8b5cf6, #ec4899);
-            --input-bg: #18181b;
-            --input-border: #3f3f46;
-            --nav-bg: #202024;
-            --nav-inactive: #71717a;
-            --roulette-bg: #111113;
-            --roulette-item-bg: #18181b;
+            --accent-gradient: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+            --input-bg: #13131c;
+            --input-border: #313147;
+            --nav-bg: #1a1a26;
+            --nav-inactive: #63637b;
+            --roulette-bg: #0b0b10;
+            --roulette-item-bg: #161622;
+            --echo-color: rgba(139, 92, 246, 0.4);
         }
 
         html.theme-midnight, body.theme-midnight {
@@ -43,31 +46,33 @@
             --text-muted: #9ca3af;
             --card-bg: #111827;
             --accent-color: #3b82f6;
-            --accent-gradient: linear-gradient(135deg, #3b82f6, #6366f1);
+            --accent-gradient: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
             --input-bg: #030712;
             --input-border: #374151;
             --nav-bg: #111827;
             --nav-inactive: #6b7280;
             --roulette-bg: #030712;
             --roulette-item-bg: #111827;
+            --echo-color: rgba(59, 130, 246, 0.4);
         }
 
         html.theme-amber, body.theme-amber {
             --bg-html: #141210;
             --bg-container: #1c1917;
             --bg-header: #292524;
-            --border-color: #292524;
+            --border-color: #38322e;
             --text-main: #f5f5f4;
             --text-muted: #a8a29e;
             --card-bg: #221e1b;
             --accent-color: #f59e0b;
-            --accent-gradient: linear-gradient(135deg, #f59e0b, #ea580c);
+            --accent-gradient: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
             --input-bg: #141210;
             --input-border: #44403c;
             --nav-bg: #221e1b;
             --nav-inactive: #78716c;
             --roulette-bg: #0c0a09;
             --roulette-item-bg: #1c1917;
+            --echo-color: rgba(245, 158, 11, 0.4);
         }
 
         html.theme-softgray, body.theme-softgray {
@@ -78,123 +83,154 @@
             --text-main: #f4f4f5;
             --text-muted: #a1a1aa;
             --card-bg: #2c2c30;
-            --accent-color: #8b5cf6;
-            --accent-gradient: linear-gradient(135deg, #8b5cf6, #ec4899);
+            --accent-color: #a855f7;
+            --accent-gradient: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
             --input-bg: #18181a;
             --input-border: #3f3f46;
             --nav-bg: #252528;
             --nav-inactive: #8c8c93;
             --roulette-bg: #151517;
             --roulette-item-bg: #242428;
+            --echo-color: rgba(168, 85, 247, 0.4);
         }
 
         html.theme-light, body.theme-light {
-            --bg-html: #ffffff;
+            --bg-html: #f3f4f6;
             --bg-container: #ffffff;
-            --bg-header: #f9fafb;
+            --bg-header: #ffffff;
             --border-color: #e5e7eb;
             --text-main: #111827;
-            --text-muted: #4b5563;
+            --text-muted: #6b7280;
             --card-bg: #f9fafb;
             --accent-color: #4f46e5;
-            --accent-gradient: linear-gradient(135deg, #4f46e5, #06b6d4);
+            --accent-gradient: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);
             --input-bg: #f3f4f6;
             --input-border: #d1d5db;
-            --nav-bg: #f9fafb;
+            --nav-bg: #ffffff;
             --nav-inactive: #9ca3af;
             --roulette-bg: #f3f4f6;
             --roulette-item-bg: #ffffff;
+            --echo-color: rgba(79, 70, 229, 0.3);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
         html, body { width: 100%; height: 100%; overflow: hidden; background-color: var(--bg-html); color: var(--text-main); transition: background 0.3s ease, color 0.3s ease; }
         body { display: flex; justify-content: center; align-items: center; }
         .app-container { width: 100vw; height: 100dvh; background: var(--bg-container); display: flex; flex-direction: column; position: relative; overflow: hidden; padding-top: env(safe-area-inset-top); transition: background 0.3s ease; }
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--bg-header); border-bottom: 1px solid var(--border-color); flex-shrink: 0; transition: background 0.3s ease; }
-        .header-title { font-size: 15px; font-weight: 600; color: var(--accent-color); display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--bg-header); border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
+        .header-title { font-size: 15px; font-weight: 700; color: var(--text-main); letter-spacing: 0.3px; display: flex; align-items: center; gap: 6px; }
         .balance-container { display: flex; align-items: center; gap: 8px; }
-        .balance-box { background: var(--border-color); padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; color: #fbbf24; display: flex; align-items: center; gap: 4px; }
-        .add-stars-btn { background: var(--input-border); color: var(--text-main); border: 1px solid var(--border-color); width: 28px; height: 28px; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .add-stars-btn:active { transform: scale(0.9); }
-        .content { flex: 1; position: relative; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px; }
+        .balance-box { background: var(--input-bg); border: 1px solid var(--border-color); padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; color: #fbbf24; display: flex; align-items: center; gap: 5px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
+        .add-stars-btn { background: var(--accent-gradient); color: #fff; border: none; width: 30px; height: 30px; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px var(--echo-color); position: relative; }
+
+        /* ЭХО-АНИМАЦИЯ ДЛЯ КНОПОК */
+        button, .mode-card-btn, .switch-tab, .inventory-item, .theme-option, .toggle-switch {
+            position: relative;
+            transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s ease, background 0.2s ease;
+            outline: none;
+        }
+
+        button:active, .mode-card-btn:active, .switch-tab:active, .inventory-item:active {
+            transform: scale(0.95) !important;
+        }
+
+        button::after, .mode-card-btn::after, .switch-tab::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: inherit;
+            background: inherit;
+            opacity: 0;
+            z-index: -1;
+            pointer-events: none;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        button:active::after, .mode-card-btn:active::after {
+            opacity: 0.5;
+            transform: scale(1.18);
+            animation: buttonEchoPulse 0.4s ease-out forwards;
+        }
+
+        @keyframes buttonEchoPulse {
+            0% { opacity: 0.6; transform: scale(1); box-shadow: 0 0 0 0 var(--echo-color); }
+            100% { opacity: 0; transform: scale(1.25); box-shadow: 0 0 20px 12px transparent; }
+        }
+
+        .content { flex: 1; position: relative; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 14px; }
         .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; animation: fadeIn 0.25s ease; }
         .screen.active { display: flex; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
-        .nav-bar { display: flex; background: var(--nav-bg); border-top: 1px solid var(--border-color); height: calc(60px + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); flex-shrink: 0; transition: background 0.3s ease; }
-        .nav-btn { flex: 1; background: none; border: none; color: var(--nav-inactive); font-size: 11px; font-weight: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; position: relative; }
-        .nav-btn span.icon { font-size: 18px; position: relative; }
-        .nav-btn.active { color: var(--accent-color); background: rgba(139, 92, 246, 0.1); }
-        .badge-dot { position: absolute; top: -2px; right: -6px; width: 10px; height: 10px; background-color: #ef4444; border-radius: 50%; border: 2px solid var(--bg-header); display: none; box-shadow: 0 0 8px #ef4444; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .nav-bar { display: flex; background: var(--nav-bg); border-top: 1px solid var(--border-color); height: calc(60px + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); flex-shrink: 0; }
+        .nav-btn { flex: 1; background: none; border: none; color: var(--nav-inactive); font-size: 11px; font-weight: 600; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; letter-spacing: 0.2px; }
+        .nav-btn span.icon { font-size: 19px; position: relative; }
+        .nav-btn.active { color: var(--accent-color); }
+        .badge-dot { position: absolute; top: -2px; right: -6px; width: 9px; height: 9px; background-color: #ef4444; border-radius: 50%; border: 2px solid var(--bg-header); display: none; box-shadow: 0 0 8px #ef4444; }
         .badge-dot.active { display: block; }
         
         .modes-menu-container { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 380px; align-items: center; }
-        .mode-card-btn { width: 100%; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 18px 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: transform 0.15s ease, border-color 0.2s; box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
-        .mode-card-btn:active { transform: scale(0.97); }
+        .mode-card-btn { width: 100%; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 18px; padding: 18px 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
         .mode-card-btn:hover { border-color: var(--accent-color); }
         .mode-card-left { display: flex; align-items: center; gap: 14px; }
-        .mode-icon-box { font-size: 32px; width: 50px; height: 50px; background: var(--input-bg); border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); }
+        .mode-icon-box { font-size: 30px; width: 52px; height: 52px; background: var(--input-bg); border-radius: 14px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); }
         .mode-info { text-align: left; }
-        .mode-title { font-size: 16px; font-weight: 700; color: var(--text-main); margin-bottom: 2px; }
+        .mode-title { font-size: 15px; font-weight: 700; color: var(--text-main); margin-bottom: 2px; }
         .mode-desc { font-size: 11px; color: var(--text-muted); }
-        .mode-arrow { font-size: 18px; color: var(--text-muted); font-weight: bold; }
+        .mode-arrow { font-size: 16px; color: var(--accent-color); font-weight: bold; }
 
-        .back-to-menu-row { width: 100%; max-width: 400px; display: flex; justify-content: flex-start; margin-bottom: 8px; }
-        .back-menu-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--accent-color); padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; }
-        .back-menu-btn:active { transform: scale(0.95); }
-
-        .roulette-switcher { display: flex; gap: 4px; margin-bottom: 8px; width: 100%; max-width: 400px; flex-wrap: wrap; justify-content: center; }
-        .switch-tab { flex: 1; min-width: 22%; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-muted); padding: 7px 2px; border-radius: 10px; font-size: 11px; font-weight: 600; cursor: pointer; text-align: center; position: relative; display: flex; align-items: center; justify-content: center; gap: 3px; }
-        .switch-tab.active { background: var(--accent-color); color: #ffffff; border-color: var(--accent-color); }
-        
-        .info-badge-btn { 
-            width: 16px; height: 16px; border-radius: 50%; background: rgba(128, 128, 128, 0.2); 
-            color: var(--text-main); font-size: 10px; font-weight: bold; font-style: normal;
-            display: inline-flex; align-items: center; justify-content: center; cursor: pointer; border: none; margin-left: 2px;
+        /* МИНИМАЛИСТИЧНАЯ КНОПКА НАЗАД (СТРЕЛОЧКА) */
+        .back-to-menu-row { width: 100%; max-width: 400px; display: flex; justify-content: flex-start; margin-bottom: 10px; }
+        .back-circle-btn { 
+            width: 38px; height: 38px; background: var(--card-bg); border: 1px solid var(--border-color); 
+            color: var(--text-main); border-radius: 12px; font-size: 18px; font-weight: bold; 
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
+        .back-circle-btn:active { border-color: var(--accent-color); color: var(--accent-color); }
 
-        .case-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 16px; text-align: center; max-width: 400px; width: 100%; box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
-        .roulette-container { position: relative; width: 100%; height: 90px; background: var(--roulette-bg); border: 2px solid var(--border-color); border-radius: 12px; overflow: hidden; margin: 8px 0; }
-        .roulette-pointer { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 3px; height: 100%; background: #ef4444; z-index: 10; box-shadow: 0 0 10px #ef4444; }
+        .roulette-switcher { display: flex; gap: 6px; margin-bottom: 10px; width: 100%; max-width: 400px; flex-wrap: wrap; justify-content: center; }
+        .switch-tab { flex: 1; min-width: 22%; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-muted); padding: 9px 4px; border-radius: 12px; font-size: 11px; font-weight: 700; cursor: pointer; text-align: center; }
+        .switch-tab.active { background: var(--accent-gradient); color: #ffffff; border-color: transparent; box-shadow: 0 4px 12px var(--echo-color); }
+        
+        .info-badge-btn { width: 18px; height: 18px; border-radius: 50%; background: var(--input-border); color: var(--text-main); font-size: 11px; font-weight: bold; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; border: none; }
+
+        .case-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 20px; padding: 18px; text-align: center; max-width: 400px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .roulette-container { position: relative; width: 100%; height: 95px; background: var(--roulette-bg); border: 2px solid var(--border-color); border-radius: 14px; overflow: hidden; margin: 10px 0; }
+        .roulette-pointer { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 3px; height: 100%; background: #ef4444; z-index: 10; box-shadow: 0 0 12px #ef4444; }
         .roulette-track { display: flex; position: absolute; left: 0; top: 0; height: 100%; will-change: transform; }
-        .roulette-item { min-width: 75px; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--roulette-item-bg); border-right: 1px solid var(--border-color); font-size: 24px; }
-        .roulette-item span.label { font-size: 9px; color: var(--text-muted); margin-top: 2px; }
-        .btn { background: var(--accent-gradient); color: white; border: none; padding: 12px 20px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 8px; transition: transform 0.1s ease, opacity 0.2s ease; }
-        .btn:active { transform: scale(0.98); }
-        .btn:disabled { background: #3f3f46; cursor: not-allowed; opacity: 0.7; }
-        .btn.cancel-mode { background: linear-gradient(135deg, #ef4444, #dc2626) !important; }
+        .roulette-item { min-width: 75px; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--roulette-item-bg); border-right: 1px solid var(--border-color); font-size: 26px; }
+        .roulette-item span.label { font-size: 9px; color: var(--text-muted); margin-top: 3px; font-weight: 600; }
         
-        @keyframes shakeError {
-            0% { transform: translateX(0); background: #ef4444; }
-            20% { transform: translateX(-5px); background: #ef4444; }
-            40% { transform: translateX(5px); background: #ef4444; }
-            60% { transform: translateX(-5px); background: #ef4444; }
-            80% { transform: translateX(5px); background: #ef4444; }
-            100% { transform: translateX(0); background: #ef4444; }
-        }
-        .btn-error-shake { animation: shakeError 0.4s ease; background: #ef4444 !important; }
+        .btn { background: var(--accent-gradient); color: white; border: none; padding: 13px 20px; border-radius: 14px; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; cursor: pointer; width: 100%; margin-top: 10px; box-shadow: 0 6px 16px var(--echo-color); }
+        .btn:disabled { background: #3f3f46; cursor: not-allowed; opacity: 0.6; box-shadow: none; }
+        .btn.cancel-mode { background: linear-gradient(135deg, #ef4444, #dc2626) !important; box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3); }
+        
+        .duel-input-row { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+        .duel-step-btn { background: var(--card-bg); color: #fbbf24; border: 1px solid var(--border-color); width: 40px; height: 40px; border-radius: 10px; font-size: 20px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .duel-bet-display { background: var(--input-bg); border: 1px solid var(--border-color); height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: var(--text-main); flex: 1; gap: 4px; }
 
-        .duel-input-row { display: flex; align-items: center; gap: 6px; margin: 6px 0; }
-        .duel-step-btn { background: var(--card-bg); color: #fbbf24; border: 1px solid var(--border-color); width: 36px; height: 38px; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .duel-bet-display { background: var(--input-bg); border: 1px solid var(--border-color); height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: var(--text-muted); pointer-events: none; flex: 1; gap: 4px; }
-
-        .withdraw-btn { background: var(--accent-gradient); color: white; border: 1px solid rgba(139, 92, 246, 0.3); padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; margin-top: 6px; width: 100%; }
-        .withdraw-btn:disabled { background: var(--border-color); border-color: var(--border-color); color: var(--text-muted); cursor: not-allowed; }
-        .sell-btn { background: var(--card-bg); color: #fbbf24; border: 1px solid var(--border-color); padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; margin-top: 4px; width: 100%; }
+        .withdraw-btn { background: var(--accent-gradient); color: white; border: none; padding: 7px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; margin-top: 6px; width: 100%; }
+        .withdraw-btn:disabled { background: var(--border-color); color: var(--text-muted); cursor: not-allowed; }
+        .sell-btn { background: var(--card-bg); color: #fbbf24; border: 1px solid var(--border-color); padding: 7px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; margin-top: 4px; width: 100%; }
 
         .inventory-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; max-width: 400px; max-height: 100%; overflow-y: auto; padding: 4px; }
-        .inventory-item { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 26px; text-align: center; cursor: pointer; position: relative; }
-        .inventory-item.selected-inv { border-color: var(--accent-color); background: rgba(139, 92, 246, 0.15); }
-        .inventory-item span.item-name { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
-        .empty-inv { color: var(--text-muted); font-size: 13px; text-align: center; grid-column: span 3; padding: 40px 10px; }
-        .profile-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 18px; max-width: 400px; width: 100%; display: flex; flex-direction: column; gap: 12px; }
+        .inventory-item { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 14px; padding: 12px 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 28px; text-align: center; cursor: pointer; position: relative; }
+        .inventory-item.selected-inv { border-color: var(--accent-color); background: rgba(139, 92, 246, 0.15); box-shadow: 0 0 12px var(--echo-color); }
+        .inventory-item span.item-name { font-size: 11px; color: var(--text-muted); margin-top: 4px; font-weight: 600; }
+        .empty-inv { color: var(--text-muted); font-size: 13px; text-align: center; grid-column: span 3; padding: 40px 10px; font-weight: 500; }
+        
+        .profile-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 20px; padding: 20px; max-width: 400px; width: 100%; display: flex; flex-direction: column; gap: 12px; }
         .input-group { display: flex; flex-direction: column; gap: 5px; text-align: left; }
-        .input-group label { font-size: 11px; color: var(--text-muted); }
+        .input-group label { font-size: 11px; color: var(--text-muted); font-weight: 600; }
         .input-row { display: flex; gap: 8px; }
-        .input-group input { background: var(--input-bg); border: 1px solid var(--input-border); padding: 9px 12px; border-radius: 8px; color: var(--text-main); font-size: 13px; flex: 1; }
-        .copy-btn { background: var(--card-bg); color: var(--accent-color); border: 1px solid var(--border-color); padding: 0 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
-        .link-btn { background: var(--card-bg); color: var(--accent-color); padding: 11px; border-radius: 8px; text-align: center; font-size: 13px; font-weight: 600; border: 1px solid var(--border-color); cursor: pointer; }
-        .admin-btn { background: var(--card-bg); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 9px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; text-align: center; }
-        .setting-row { display: flex; justify-content: space-between; align-items: center; background: var(--input-bg); border: 1px solid var(--border-color); padding: 10px 12px; border-radius: 10px; font-size: 13px; }
+        .input-group input { background: var(--input-bg); border: 1px solid var(--input-border); padding: 10px 12px; border-radius: 10px; color: var(--text-main); font-size: 13px; flex: 1; outline: none; }
+        .copy-btn { background: var(--card-bg); color: var(--accent-color); border: 1px solid var(--border-color); padding: 0 14px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; }
+        .link-btn { background: var(--card-bg); color: var(--accent-color); padding: 12px; border-radius: 10px; text-align: center; font-size: 13px; font-weight: 700; border: 1px solid var(--border-color); cursor: pointer; }
+        .admin-btn { background: var(--card-bg); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 10px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; text-align: center; }
+        
+        .setting-row { display: flex; justify-content: space-between; align-items: center; background: var(--input-bg); border: 1px solid var(--border-color); padding: 12px 14px; border-radius: 12px; font-size: 13px; font-weight: 600; }
         .toggle-switch { width: 50px; height: 26px; background-color: var(--input-border); border-radius: 13px; position: relative; cursor: pointer; transition: background-color 0.25s ease; display: flex; align-items: center; padding: 2px; }
         .toggle-switch.active { background-color: #22c55e; }
         .toggle-ball { width: 22px; height: 22px; background-color: #ffffff; border-radius: 50%; position: absolute; left: 2px; transition: transform 0.25s cubic-bezier(0.15, 0.85, 0.2, 1); }
@@ -202,20 +238,21 @@
         
         .theme-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 4px; }
         .theme-option { background: var(--input-bg); border: 2px solid var(--border-color); border-radius: 12px; padding: 8px 4px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
-        .theme-option.active { border-color: var(--accent-color); background: rgba(139, 92, 246, 0.12); box-shadow: 0 0 10px rgba(139, 92, 246, 0.3); }
+        .theme-option.active { border-color: var(--accent-color); background: rgba(139, 92, 246, 0.12); box-shadow: 0 0 10px var(--echo-color); }
         .theme-preview-circle { width: 24px; height: 24px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); }
-        .theme-name { font-size: 9px; color: var(--text-muted); font-weight: 600; text-align: center; }
+        .theme-name { font-size: 9px; color: var(--text-muted); font-weight: 700; text-align: center; }
 
         .deposit-options { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
-        .deposit-option-btn { background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: 10px; font-size: 13px; cursor: pointer; }
-        .deposit-info-box { background: var(--input-bg); border: 1px solid var(--accent-color); padding: 12px; border-radius: 10px; color: var(--text-main); font-size: 13px; margin: 10px 0; display: none; text-align: center; }
-        .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); display: none; justify-content: center; align-items: center; z-index: 100; }
-        .modal-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 20px; padding: 20px; text-align: center; max-width: 320px; width: 88%; position: relative; }
-        .modal-close-cross { position: absolute; top: 10px; right: 14px; font-size: 18px; color: var(--text-muted); cursor: pointer; }
-        .close-btn { background: var(--card-bg); color: var(--text-muted); border: 1px solid var(--border-color); padding: 10px 16px; border-radius: 10px; font-size: 13px; cursor: pointer; width: 100%; }
+        .deposit-option-btn { background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 12px; border-radius: 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .deposit-info-box { background: var(--input-bg); border: 1px solid var(--accent-color); padding: 12px; border-radius: 12px; color: var(--text-main); font-size: 13px; margin: 10px 0; display: none; text-align: center; }
+        
+        .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 100; }
+        .modal-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 22px; padding: 22px; text-align: center; max-width: 320px; width: 88%; position: relative; box-shadow: 0 12px 36px rgba(0,0,0,0.3); }
+        .modal-close-cross { position: absolute; top: 12px; right: 16px; font-size: 18px; color: var(--text-muted); cursor: pointer; }
+        .close-btn { background: var(--input-bg); color: var(--text-muted); border: 1px solid var(--border-color); padding: 11px 16px; border-radius: 12px; font-size: 13px; font-weight: 600; cursor: pointer; width: 100%; }
 
-        .countdown-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 200; border-radius: 16px; }
-        .countdown-number { font-size: 90px; font-weight: 900; animation: scaleNum 0.9s infinite alternate; text-shadow: 0 0 20px rgba(255,255,255,0.4); }
+        .countdown-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 200; border-radius: 20px; }
+        .countdown-number { font-size: 90px; font-weight: 900; animation: scaleNum 0.9s infinite alternate; }
         .countdown-3 { color: #ef4444; }
         .countdown-2 { color: #fbbf24; }
         .countdown-1 { color: #22c55e; }
@@ -223,35 +260,35 @@
 
         .upgrade-arena { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
         .upgrade-slots { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 10px; }
-        .upgrade-slot { flex: 1; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px 6px; text-align: center; min-height: 75px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; }
-        .upgrade-slot.selected { border-color: var(--accent-color); background: rgba(139, 92, 246, 0.1); }
-        .upgrade-slot span.item-name { font-size: 10px; color: var(--text-muted); margin-top: 3px; font-weight: 500; }
-        .upgrade-arrow { font-size: 16px; color: var(--accent-color); font-weight: bold; opacity: 0.8; }
+        .upgrade-slot { flex: 1; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px 6px; text-align: center; min-height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
+        .upgrade-slot.selected { border-color: var(--accent-color); background: rgba(139, 92, 246, 0.12); }
+        .upgrade-slot span.item-name { font-size: 10px; color: var(--text-muted); margin-top: 4px; font-weight: 600; }
+        .upgrade-arrow { font-size: 18px; color: var(--accent-color); font-weight: bold; }
         
-        .upgrade-wheel-box { position: relative; width: 120px; height: 120px; margin: 4px auto; display: flex; align-items: center; justify-content: center; }
+        .upgrade-wheel-box { position: relative; width: 125px; height: 125px; margin: 6px auto; display: flex; align-items: center; justify-content: center; }
         .upgrade-circle-bg { width: 100%; height: 100%; border-radius: 50%; border: 6px solid var(--border-color); position: relative; display: flex; align-items: center; justify-content: center; background: var(--roulette-bg); overflow: hidden; }
         .upgrade-fill-sector { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(var(--accent-color) 0deg, var(--accent-color) var(--deg), transparent var(--deg), transparent 360deg); opacity: 0.85; }
-        .upgrade-inner-cutout { position: absolute; width: 84px; height: 84px; background: var(--card-bg); border-radius: 50%; z-index: 2; display: flex; align-items: center; justify-content: center; }
+        .upgrade-inner-cutout { position: absolute; width: 88px; height: 88px; background: var(--card-bg); border-radius: 50%; z-index: 2; display: flex; align-items: center; justify-content: center; }
         .upgrade-wheel-spinner { position: absolute; inset: 0; border-radius: 50%; z-index: 10; pointer-events: none; transition: transform 3s cubic-bezier(0.15, 0.85, 0.15, 1); transform: rotate(0deg); }
         .upgrade-arrow-indicator { position: absolute; top: -6px; left: 50%; transform: translateX(-50%); width: 4px; height: 20px; background: #ef4444; border-radius: 2px; }
-        .chance-text { font-size: 15px; font-weight: 700; color: #fbbf24; z-index: 3; }
-        .add-stars-control { display: flex; align-items: center; justify-content: center; gap: 10px; background: var(--input-bg); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 10px; width: 100%; font-size: 11px; color: var(--text-muted); }
-        .step-btn { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--input-border); width: 24px; height: 24px; border-radius: 6px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .chance-text { font-size: 16px; font-weight: 800; color: #fbbf24; z-index: 3; }
+        .add-stars-control { display: flex; align-items: center; justify-content: center; gap: 10px; background: var(--input-bg); border: 1px solid var(--border-color); padding: 8px 14px; border-radius: 12px; width: 100%; font-size: 12px; color: var(--text-muted); font-weight: 600; }
+        .step-btn { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--input-border); width: 26px; height: 26px; border-radius: 6px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
         .selected-icons-row { display: flex; align-items: center; justify-content: center; gap: 3px; font-size: 18px; min-height: 24px; }
         .mini-icon-box { font-size: 16px; line-height: 1; }
 
         .ref-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
-        .ref-stat-box { background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px; text-align: center; }
-        .ref-stat-val { font-size: 18px; font-weight: 700; color: var(--accent-color); margin-top: 2px; }
+        .ref-stat-box { background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 14px; padding: 12px; text-align: center; }
+        .ref-stat-val { font-size: 18px; font-weight: 800; color: var(--accent-color); margin-top: 2px; }
         .ref-stat-val.gold { color: #fbbf24; }
-        .ref-stat-lbl { font-size: 10px; color: var(--text-muted); }
-        .ref-share-btn { background: var(--accent-gradient); color: #fff; border: none; padding: 11px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 4px; }
-        .ref-list-box { background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px; margin-top: 6px; max-height: 140px; overflow-y: auto; text-align: left; }
-        .ref-list-title { font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
-        .ref-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-color); font-size: 12px; }
+        .ref-stat-lbl { font-size: 10px; color: var(--text-muted); font-weight: 600; }
+        .ref-share-btn { background: var(--accent-gradient); color: #fff; border: none; padding: 12px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 4px; box-shadow: 0 4px 14px var(--echo-color); }
+        .ref-list-box { background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 14px; padding: 12px; margin-top: 6px; max-height: 140px; overflow-y: auto; text-align: left; }
+        .ref-list-title { font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+        .ref-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-color); font-size: 12px; font-weight: 600; }
         .ref-item-user { display: flex; align-items: center; gap: 6px; }
-        .ref-item-reward { color: #fbbf24; font-weight: 600; font-size: 11px; }
+        .ref-item-reward { color: #fbbf24; font-weight: 700; font-size: 11px; }
     </style>
 </head>
 <body>
@@ -268,7 +305,7 @@
     <div class="content">
         <div class="screen active" id="screen-main">
             <div class="modes-menu-container">
-                <div style="font-size: 18px; font-weight: 700; color: var(--accent-color); margin-bottom: 4px; text-align: center;">🎮 Выберите игровой режим</div>
+                <div style="font-size: 18px; font-weight: 800; color: var(--accent-color); margin-bottom: 4px; text-align: center;">🎮 Выберите игровой режим</div>
                 <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; text-align: center;">Открывайте кейсы, сражайтесь в дуэлях или улучшайте предметы!</p>
                 
                 <div class="mode-card-btn" onclick="openModeScreen('cases')">
@@ -308,7 +345,7 @@
 
         <div class="screen" id="screen-cases">
             <div class="back-to-menu-row">
-                <button class="back-menu-btn" onclick="backToMainScreen()">← Назад в меню</button>
+                <button class="back-circle-btn" onclick="backToMainScreen()">←</button>
             </div>
             <div class="roulette-switcher">
                 <button class="switch-tab active" id="tab-paid" onclick="switchRouletteMode('paid')">🎁 25⭐</button>
@@ -332,7 +369,7 @@
 
         <div class="screen" id="screen-duel">
             <div class="back-to-menu-row">
-                <button class="back-menu-btn" onclick="backToMainScreen()">← Назад в меню</button>
+                <button class="back-circle-btn" onclick="backToMainScreen()">←</button>
             </div>
             <div class="case-card" style="position: relative;">
                 <div class="countdown-overlay" id="countdown-overlay">
@@ -374,7 +411,7 @@
 
         <div class="screen" id="screen-upgrade">
             <div class="back-to-menu-row">
-                <button class="back-menu-btn" onclick="backToMainScreen()">← Назад в меню</button>
+                <button class="back-circle-btn" onclick="backToMainScreen()">←</button>
             </div>
             <div class="case-card" style="position: relative;">
                 <h2 style="font-size: 17px; margin-bottom: 4px;">📈 Апгрейд предметов</h2>
@@ -419,7 +456,7 @@
 
         <div class="screen" id="screen-deposit-stars">
             <div class="back-to-menu-row">
-                <button class="back-menu-btn" onclick="backToMainScreen()">← Назад в меню</button>
+                <button class="back-circle-btn" onclick="backToMainScreen()">←</button>
             </div>
             <div class="case-card" style="max-width: 400px; width: 100%;">
                 <h2 style="font-size: 17px; margin-bottom: 4px; color: #fbbf24;">⭐ Пополнение Telegram Stars</h2>
@@ -556,12 +593,12 @@
     <div class="modal-overlay" id="duel-info-modal">
         <div class="modal-card">
             <div class="modal-close-cross" onclick="closeDuelInfoModal()">✖</div>
-            <div style="font-size:17px; font-weight:600; color:var(--accent-color); margin-bottom:8px;">⚔️ Правила дуэли</div>
+            <div style="font-size:17px; font-weight:700; color:var(--accent-color); margin-bottom:8px;">⚔️ Правила дуэли</div>
             <div style="font-size:12px; color:var(--text-main); text-align: left; line-height: 1.5; margin-bottom: 14px;">
                 • <b>Минимальная ставка</b> в режиме дуэли составляет <b>25 звезд</b>.<br>
                 • Награда за победу — чистый <b>2X множитель</b> от вашей ставки.<br>
-                • <b>Ничья:</b> Если обоим игрокам выпадает одинаковый предмет, ставка возвращается каждому игроку на баланс в полном объеме.<br>
-                • <b>Онлайн PvP:</b> Система соединяет вас с реальным другом или автоматически находит бота, если в очереди никого нет.
+                • <b>Ничья:</b> Если обоим игрокам выпадает одинаковый предмет, ставка возвращается в полном объеме.<br>
+                • <b>Онлайн PvP:</b> Система соединяет вас с реальным игроком или подбирает бота.
             </div>
             <button class="btn" onclick="closeDuelInfoModal()">Понятно</button>
         </div>
@@ -571,7 +608,7 @@
         <div class="modal-card">
             <div class="modal-close-cross" onclick="closeModal()">✖</div>
             <div style="font-size:48px;" id="modal-icon">🎁</div>
-            <div style="font-size:17px; font-weight:600; margin-top:6px;" id="modal-title">Результат</div>
+            <div style="font-size:18px; font-weight:800; margin-top:6px;" id="modal-title">Результат</div>
             <div style="font-size:12px; color:var(--text-muted); margin:10px 0;" id="modal-desc">Вы выиграли подарок!</div>
             <div style="font-size:11px; color:var(--accent-color); margin-bottom:8px; display:none;" id="modal-sub-desc"></div>
             <button class="btn" id="modal-action-btn" onclick="closeModal()">Закрыть</button>
@@ -581,7 +618,7 @@
     <div class="modal-overlay" id="item-select-modal">
         <div class="modal-card" style="max-height: 80vh; overflow-y: auto;">
             <div class="modal-close-cross" onclick="closeItemSelectModal()">✖</div>
-            <div style="font-size:16px; font-weight:600; margin-bottom:10px;" id="item-select-title">Выберите предмет</div>
+            <div style="font-size:16px; font-weight:700; margin-bottom:10px;" id="item-select-title">Выберите предмет</div>
             <div class="inventory-grid" id="item-select-grid" style="grid-template-columns: repeat(2, 1fr);"></div>
             <button class="btn" id="confirm-select-btn" style="display:none; margin-top: 10px;" onclick="closeItemSelectModal()">Готово</button>
         </div>
@@ -590,7 +627,7 @@
     <div class="modal-overlay" id="deposit-modal">
         <div class="modal-card">
             <div class="modal-close-cross" onclick="closeDepositModal()">✖</div>
-            <div style="font-size:17px; font-weight:600; margin-bottom:6px;">Пополнение баланса</div>
+            <div style="font-size:17px; font-weight:700; margin-bottom:6px;">Пополнение баланса</div>
             <div style="font-size:12px; color:var(--text-muted);">Выберите удобный способ:</div>
             <div class="deposit-options">
                 <button class="deposit-option-btn" onclick="selectDeposit('stars')">⭐ Звездочки TG</button>
@@ -604,7 +641,7 @@
     <div class="modal-overlay" id="admin-auth-modal">
         <div class="modal-card">
             <div class="modal-close-cross" onclick="closeAdminAuthModal()">✖</div>
-            <div style="font-size:17px; font-weight:600; color:#ef4444; margin-bottom:8px;">🔒 Доступ ограничен</div>
+            <div style="font-size:17px; font-weight:700; color:#ef4444; margin-bottom:8px;">🔒 Доступ ограничен</div>
             <div class="input-group" style="margin-bottom: 12px;">
                 <input type="password" id="admin-pass-input" placeholder="Пароль..." style="text-align: center;">
             </div>
@@ -615,7 +652,7 @@
     <div class="modal-overlay" id="admin-modal">
         <div class="modal-card">
             <div class="modal-close-cross" onclick="closeAdminModal()">✖</div>
-            <div style="font-size:17px; font-weight:600; color:#ef4444; margin-bottom:8px;">⚙️ Админ Панель</div>
+            <div style="font-size:17px; font-weight:700; color:#ef4444; margin-bottom:8px;">⚙️ Админ Панель</div>
             <button class="btn" onclick="adminSelfAddStars()" style="background: linear-gradient(135deg, #8b5cf6, #ec4899); margin-bottom: 8px;">+1000 ⭐ Себе</button>
             <button class="close-btn" onclick="closeAdminModal()">Закрыть</button>
         </div>
@@ -633,27 +670,52 @@
         if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
+    // ДИНАМИЧЕСКИЙ ЭЛЕКТРО-САУНДТРЕК (SYNTHWAVE 8-BIT RHYTHM)
     function startBackgroundMusic() {
         if (musicInterval) return;
-        const notes = [261.63, 329.63, 392.00, 523.25, 440.00, 349.23];
+        const synthBass = [130.81, 146.83, 164.81, 174.61, 196.00];
+        const synthLead = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25];
+        let step = 0;
+
         musicInterval = setInterval(() => {
             if (!musicEnabled) return;
             try {
                 initAudio();
                 if (!audioCtx) return;
-                const note = notes[Math.floor(Math.random() * notes.length)];
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(note, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.015, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 2.0);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 2.0);
+
+                const now = audioCtx.currentTime;
+                
+                // Басовый заук
+                const bassFreq = synthBass[step % synthBass.length];
+                const bassOsc = audioCtx.createOscillator();
+                const bassGain = audioCtx.createGain();
+                bassOsc.type = 'sawtooth';
+                bassOsc.frequency.setValueAtTime(bassFreq, now);
+                bassGain.gain.setValueAtTime(0.015, now);
+                bassGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+                bassOsc.connect(bassGain);
+                bassGain.connect(audioCtx.destination);
+                bassOsc.start(now);
+                bassOsc.stop(now + 0.35);
+
+                // Верхнее мелодичное арпеджио
+                if (step % 2 === 0) {
+                    const leadFreq = synthLead[(step * 2) % synthLead.length];
+                    const leadOsc = audioCtx.createOscillator();
+                    const leadGain = audioCtx.createGain();
+                    leadOsc.type = 'square';
+                    leadOsc.frequency.setValueAtTime(leadFreq, now + 0.1);
+                    leadGain.gain.setValueAtTime(0.01, now + 0.1);
+                    leadGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
+                    leadOsc.connect(leadGain);
+                    leadGain.connect(audioCtx.destination);
+                    leadOsc.start(now + 0.1);
+                    leadOsc.stop(now + 0.3);
+                }
+
+                step++;
             } catch(e) {}
-        }, 3000);
+        }, 400);
     }
 
     function toggleMusicSwitch() {
@@ -675,9 +737,9 @@
             if (!audioCtx) return;
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(450, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(120, audioCtx.currentTime + 0.04);
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(500, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.04);
             gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
             osc.connect(gain);
@@ -695,14 +757,88 @@
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = 'square';
-            osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.015);
-            gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.015);
+            osc.frequency.setValueAtTime(1400, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.02);
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.02);
             osc.connect(gain);
             gain.connect(audioCtx.destination);
             osc.start();
-            osc.stop(audioCtx.currentTime + 0.015);
+            osc.stop(audioCtx.currentTime + 0.02);
+        } catch(e) {}
+    }
+
+    // ЗВУК РАДОСТНОЙ ПОБЕДЫ
+    function playWinSound() {
+        if (!sfxEnabled) return;
+        try {
+            initAudio();
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+            notes.forEach((freq, index) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, now + index * 0.08);
+                gain.gain.setValueAtTime(0.08, now + index * 0.08);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + index * 0.08 + 0.3);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now + index * 0.08);
+                osc.stop(now + index * 0.08 + 0.3);
+            });
+            
+            // Салют конфетти
+            if (window.confetti) {
+                confetti({ particleCount: 70, spread: 60, origin: { y: 0.7 } });
+            }
+        } catch(e) {}
+    }
+
+    // ЗВУК ПОРАЖЕНИЯ (ГРУСТНЫЙ УБЫВАЮЩИЙ АККОРД)
+    function playSadLossSound() {
+        if (!sfxEnabled) return;
+        try {
+            initAudio();
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            const notes = [400, 350, 300, 220];
+            notes.forEach((freq, index) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(freq, now + index * 0.12);
+                gain.gain.setValueAtTime(0.07, now + index * 0.12);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + index * 0.12 + 0.35);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now + index * 0.12);
+                osc.stop(now + index * 0.12 + 0.35);
+            });
+        } catch(e) {}
+    }
+
+    // ЗВУК ПОПОЛНЕНИЯ БАЛАНСА (ЗВОН ЗВЕЗД)
+    function playDepositSuccessSound() {
+        if (!sfxEnabled) return;
+        try {
+            initAudio();
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            const notes = [987.77, 1318.51, 1567.98, 2093.00];
+            notes.forEach((freq, index) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, now + index * 0.06);
+                gain.gain.setValueAtTime(0.09, now + index * 0.06);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + index * 0.06 + 0.25);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now + index * 0.06);
+                osc.stop(now + index * 0.06 + 0.25);
+            });
         } catch(e) {}
     }
 
@@ -723,28 +859,6 @@
             gain.connect(audioCtx.destination);
             osc.start(now);
             osc.stop(now + 0.35);
-        } catch(e) {}
-    }
-
-    function playWinSound() {
-        if (!sfxEnabled) return;
-        try {
-            initAudio();
-            if (!audioCtx) return;
-            const now = audioCtx.currentTime;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(523.25, now);
-            osc.frequency.setValueAtTime(659.25, now + 0.1);
-            osc.frequency.setValueAtTime(783.99, now + 0.2);
-            osc.frequency.setValueAtTime(1046.50, now + 0.3);
-            gain.gain.setValueAtTime(0.1, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start(now);
-            osc.stop(now + 0.6);
         } catch(e) {}
     }
 
@@ -790,6 +904,7 @@
     socket.on('balance_updated', (data) => {
         userStars = data.stars;
         updateBalanceUI();
+        playDepositSuccessSound();
     });
     
     let userStars = 0;
@@ -878,7 +993,7 @@
         let cooldown = 24 * 60 * 60 * 1000;
         if (now - lastFreeCaseTime < cooldown) {
             spinBtn.disabled = true;
-            let remaining = Math.ceil((cooldown - (now - lastFreeTime)) / 1000);
+            let remaining = Math.ceil((cooldown - (now - lastFreeCaseTime)) / 1000);
             let hours = Math.floor(remaining / 3600);
             let mins = Math.floor((remaining % 3600) / 60);
             spinBtn.innerText = `Доступно через ${hours}ч ${mins}м`;
@@ -1213,7 +1328,6 @@
 
         if (isSpinning) return;
 
-        // Открытие кейса через защищенный серверный эндпоинт
         if (activeScreen === 'screen-cases') {
             let cost = 25;
             if (currentMode === 'paid50') cost = 50;
@@ -1222,6 +1336,7 @@
 
             if (currentMode !== 'free' && userStars < cost) {
                 showModal('⭐', 'Недостаточно звезд', `Для открытия кейса требуется ${cost} ⭐.`, false, false);
+                playSadLossSound();
                 return;
             }
 
@@ -1240,6 +1355,7 @@
                     isSpinning = false;
                     document.getElementById('spin-btn').disabled = false;
                     showModal('⚠️', 'Ошибка', data.error || 'Не удалось открыть кейс', false, false);
+                    playSadLossSound();
                     return;
                 }
 
@@ -1254,6 +1370,7 @@
                 isSpinning = false;
                 document.getElementById('spin-btn').disabled = false;
                 showModal('❌', 'Ошибка сети', 'Не удалось связаться с сервером. Попробуйте еще раз.', false, false);
+                playSadLossSound();
             }
             return;
         }
@@ -1262,11 +1379,13 @@
             let totalFromValue = upgradeFromItems.reduce((sum, item) => sum + (item.numericPrice || getNumericPrice(item.name)), 0) + upgradeExtraStars;
             if (totalFromValue <= 0 || !upgradeToItem) {
                 showModal('⚠️', 'Ошибка апгрейда', 'Выберите предметы или добавьте звезды, а также выберите желаемый подарок!', false, false);
+                playSadLossSound();
                 return;
             }
             if (upgradeExtraStars > 0) {
                 if (userStars < upgradeExtraStars) {
                     showModal('⭐', 'Недостаточно звезд', 'Не хватает звезд на балансе.', false, false);
+                    playSadLossSound();
                     return;
                 }
                 userStars -= upgradeExtraStars;
@@ -1305,9 +1424,9 @@
                 document.getElementById('upgrade-spin-btn').disabled = false;
                 spinner.style.transition = 'none';
                 spinner.style.transform = `rotate(${finalDeg % 360}deg)`;
-                playWinSound();
 
                 if (isSuccess) {
+                    playWinSound();
                     const uniqueId = Date.now() + Math.random();
                     const lockoutTime = Date.now() + 5 * 60 * 1000;
                     inventory.push({ 
@@ -1318,6 +1437,7 @@
                     saveInventory();
                     showModal('🎉', 'Апгрейд Успешен!', `Вы успешно апгрейдили на подарок "${upgradeToItem.name}"!`, false, true);
                 } else {
+                    playSadLossSound();
                     showModal('❌', 'Апгрейд не удался', 'Увы, удача была не на вашей стороне, ставка сгорела.', false, false);
                 }
 
@@ -1338,14 +1458,14 @@
             const spinBtnEl = document.getElementById('duel-spin-btn');
 
             if (inputVal < 25) {
-                spinBtnEl.classList.add('btn-error-shake');
-                setTimeout(() => spinBtnEl.classList.remove('btn-error-shake'), 400);
                 showModal('⚠️', 'Ошибка ставки', 'Минимальная ставка в дуэли должна составлять не менее 25 звезд!', false, false);
+                playSadLossSound();
                 return;
             }
 
             if (userStars < inputVal) {
                 showModal('⭐', 'Недостаточно звезд', 'У вас недостаточно звезд на балансе для такой ставки!', false, false);
+                playSadLossSound();
                 return;
             }
 
@@ -1435,15 +1555,15 @@
             isSpinning = false;
             document.getElementById('duel-spin-btn').disabled = false;
             document.getElementById('duel-status-text').style.display = 'none';
-            playWinSound();
 
             if (myGift.name === oppGift.name) {
                 userStars += myChosenBet;
                 updateBalance();
-                showModal('🤝', 'Ничья!', `Обоим игрокам выпал одинаковый предмет! Ставка (${myChosenBet} ⭐) возвращена на баланс.`, false, false, '', () => {
+                showModal('🤝', 'Ничья!', `Обоим игрокам выпал одинаковый предмет! Ставка (${myChosenBet} ⭐) возвращена.`, false, false, '', () => {
                     resetDuelInterfaceToDefault();
                 });
             } else if (isWinner) {
+                playWinSound();
                 let winnings = myChosenBet * 2;
                 userStars += winnings;
                 updateBalance();
@@ -1451,6 +1571,7 @@
                     resetDuelInterfaceToDefault();
                 });
             } else {
+                playSadLossSound();
                 showModal('🥺', 'ПОРАЖЕНИЕ', `Ваша ставка сгорела.`, false, false, `Соперник ${opponentName} выиграл раунд!`, () => {
                     resetDuelInterfaceToDefault();
                 });
@@ -1482,10 +1603,16 @@
         setTimeout(() => {
             isSpinning = false;
             document.getElementById('spin-btn').disabled = false;
-            playWinSound();
+            
             let numericP = winningGift.price;
             let isNothing = (numericP === 0);
             
+            if (isNothing) {
+                playSadLossSound();
+            } else {
+                playWinSound();
+            }
+
             if (!isNothing && !winningGift.giftId) {
                 showModal(winningGift.icon, `Выиграно: ${winningGift.name}!`, `Данный предмет можно будет вывести в последующем обновлении или продать прямо сейчас!`, false, true);
             } else {
@@ -1617,15 +1744,18 @@
             if (data.success) {
                 inventory = data.inventory;
                 saveInventory();
+                playWinSound();
                 showModal('🎁', 'Успешный вывод!', `Подарок "${item.name}" успешно отправлен в ваш профиль Telegram!`, false, true);
             } else {
                 if (data.inventory) {
                     inventory = data.inventory;
                     renderInventory();
                 }
+                playSadLossSound();
                 showModal('🥺', 'Извините', data.error || 'Произошла ошибка при выводе.', false, false);
             }
         } catch (e) {
+            playSadLossSound();
             showModal('❌', 'Ошибка соединения', 'Не удалось связаться с сервером.', false, false);
         }
     }
@@ -1638,6 +1768,7 @@
         updateBalance();
         inventory.splice(index, 1);
         saveInventory();
+        playDepositSuccessSound();
         
         document.getElementById('modal-icon').innerText = '⭐';
         document.getElementById('modal-title').innerText = 'Продано!';
@@ -1744,9 +1875,11 @@
                 if (tg && tg.openInvoice) {
                     tg.openInvoice(data.invoiceLink, async (status) => {
                         if (status === 'paid') {
+                            playDepositSuccessSound();
                             showModal('⭐', 'Оплата прошла!', `Счет успешно оплачен. Зачисляем ${amount} ⭐...`, false, true);
                             await syncWithServer();
                         } else {
+                            playSadLossSound();
                             showModal('❌', 'Отменено', 'Оплата была отменена.', false, false);
                         }
                     });
@@ -1754,11 +1887,13 @@
                     window.open(data.invoiceLink, '_blank');
                 }
             } else {
+                playSadLossSound();
                 showModal('❌', 'Ошибка', data.error || 'Не удалось создать платеж.', false, false);
             }
         } catch (e) {
             clearTimeout(timeoutId);
             closeModal();
+            playSadLossSound();
             if (e.name === 'AbortError') {
                 showModal('⏱️', 'Сервер просыпается', 'Сервер долго отвечает. Попробуйте нажать еще раз через 10 секунд.', false, false);
             } else {
@@ -1819,6 +1954,7 @@
             document.getElementById('admin-modal').style.display = 'flex';
         } else {
             closeAdminAuthModal();
+            playSadLossSound();
             showModal('❌', 'Ошибка', 'Неверный пароль!', false, false);
         }
     }
@@ -1832,6 +1968,7 @@
         userStars += 1000;
         updateBalanceUI();
         closeAdminModal();
+        playDepositSuccessSound();
 
         try {
             const res = await fetch(`${SERVER_URL}/api/update-stars`, {
