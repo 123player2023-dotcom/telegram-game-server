@@ -2,9 +2,9 @@
   "name": "telegram-game-server",
   "version": "1.0.0",
   "description": "Backend for Telegram Mini App",
-  "main": "server.js",
+  "main": "server_2.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server_2.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
