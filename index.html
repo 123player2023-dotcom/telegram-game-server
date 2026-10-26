@@ -154,12 +154,84 @@
             z-index: 0;
             overflow: hidden;
             pointer-events: none;
-            background: #0d0d11;
+            background: #030308;
         }
+
+        /* Силуэт космоса и динамичные планеты */
+        .space-background-silhouette {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% 30%, #1e113c 0%, #060311 75%);
+            z-index: 0;
+        }
+        .planet {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.45;
+            pointer-events: none;
+            filter: blur(1px);
+        }
+        .planet-1 {
+            width: 130px;
+            height: 130px;
+            background: radial-gradient(circle at 30% 30%, #a855f7, #3b0764);
+            top: 8%;
+            left: -40px;
+            animation: floatPlanet 35s linear infinite alternate;
+            box-shadow: 0 0 40px rgba(168, 85, 247, 0.35);
+        }
+        .planet-2 {
+            width: 90px;
+            height: 90px;
+            background: radial-gradient(circle at 30% 30%, #3b82f6, #1e3a8a);
+            bottom: 12%;
+            right: -30px;
+            animation: floatPlanet 28s linear infinite alternate-reverse;
+            box-shadow: 0 0 35px rgba(59, 130, 246, 0.35);
+        }
+        @keyframes floatPlanet {
+            0% { transform: translateY(0px) scale(1) rotate(0deg); }
+            100% { transform: translateY(35px) scale(1.06) rotate(15deg); }
+        }
+
+        /* Летящая ракета в верхней части экрана (раз в 20 секунд) */
+        .flying-rocket {
+            position: absolute;
+            top: 14%;
+            left: -100px;
+            font-size: 30px;
+            z-index: 3;
+            pointer-events: none;
+            filter: drop-shadow(0 0 14px rgba(255, 140, 0, 0.9));
+            opacity: 0;
+        }
+        .flying-rocket.fly {
+            animation: rocketFly 4.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        @keyframes rocketFly {
+            0% {
+                left: -80px;
+                transform: translateY(0) rotate(25deg) scale(0.8);
+                opacity: 0;
+            }
+            15% {
+                opacity: 1;
+            }
+            85% {
+                opacity: 1;
+            }
+            100% {
+                left: 110vw;
+                transform: translateY(-50px) rotate(25deg) scale(1.25);
+                opacity: 0;
+            }
+        }
+
         .bg-game-video {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            opacity: 0.35;
         }
         .fx-neon-glow {
             position: absolute;
@@ -167,6 +239,7 @@
             box-shadow: inset 0 0 90px rgba(168, 85, 247, 0.55), inset 0 0 45px rgba(59, 130, 246, 0.45);
             animation: neonPulse 3.5s ease-in-out infinite alternate;
             pointer-events: none;
+            z-index: 1;
         }
         @keyframes neonPulse {
             0% { opacity: 0.5; }
@@ -178,7 +251,7 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
-            z-index: 2;
+            z-index: 3;
         }
 
         .bg-floating-icons {
@@ -186,20 +259,20 @@
             inset: 0;
             pointer-events: none;
             overflow: hidden;
-            z-index: 1;
+            z-index: 2;
         }
         .floating-icon {
             position: absolute;
             bottom: -50px;
-            font-size: 22px;
-            opacity: 0.45;
+            font-size: 24px;
+            opacity: 0.5;
             animation: floatUp 9s linear infinite;
-            filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.8));
+            filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.9));
         }
         @keyframes floatUp {
             0% { transform: translateY(0) rotate(0deg) scale(0.8); opacity: 0; }
-            15% { opacity: 0.5; }
-            85% { opacity: 0.5; }
+            15% { opacity: 0.55; }
+            85% { opacity: 0.55; }
             100% { transform: translateY(-110vh) rotate(360deg) scale(1.2); opacity: 0; }
         }
 
@@ -499,6 +572,10 @@
 </audio>
 
 <div class="video-bg-container">
+    <div class="space-background-silhouette"></div>
+    <div class="planet planet-1"></div>
+    <div class="planet planet-2"></div>
+    <div class="flying-rocket" id="flying-rocket">🚀</div>
     <video autoplay muted loop playsinline class="bg-game-video" onerror="this.style.display='none';">
         <source src="background.mp4" type="video/mp4">
     </video>
@@ -892,13 +969,13 @@
         constructor(x, y) {
             this.x = x;
             this.y = y;
-            this.size = Math.random() * 5 + 2;
-            this.speedX = (Math.random() - 0.5) * 4.5;
-            this.speedY = (Math.random() - 0.5) * 4.5;
-            this.color = `hsl(${Math.random() * 80 + 250}, 100%, 80%)`;
+            this.size = Math.random() * 8 + 3;
+            this.speedX = (Math.random() - 0.5) * 8;
+            this.speedY = (Math.random() - 0.5) * 8;
+            this.color = `hsl(${Math.random() * 120 + 240}, 100%, 75%)`;
             this.life = 1;
-            this.decay = Math.random() * 0.025 + 0.012;
-            this.isGlint = Math.random() > 0.4;
+            this.decay = Math.random() * 0.02 + 0.008;
+            this.isGlint = Math.random() > 0.3;
         }
         update() {
             this.x += this.speedX;
@@ -909,15 +986,15 @@
             ctx.save();
             ctx.globalAlpha = Math.max(0, this.life);
             ctx.fillStyle = this.color;
-            ctx.shadowBlur = 18;
+            ctx.shadowBlur = 25;
             ctx.shadowColor = this.color;
             
             if (this.isGlint) {
                 ctx.beginPath();
-                ctx.moveTo(this.x, this.y - this.size * 1.8);
-                ctx.lineTo(this.x + this.size * 1.8, this.y);
-                ctx.lineTo(this.x, this.y + this.size * 1.8);
-                ctx.lineTo(this.x - this.size * 1.8, this.y);
+                ctx.moveTo(this.x, this.y - this.size * 2);
+                ctx.lineTo(this.x + this.size * 2, this.y);
+                ctx.lineTo(this.x, this.y + this.size * 2);
+                ctx.lineTo(this.x - this.size * 2, this.y);
                 ctx.closePath();
                 ctx.fill();
             } else {
@@ -935,11 +1012,11 @@
         }
     }
 
-    window.addEventListener('mousemove', (e) => addSparkles(e.clientX, e.clientY, 1));
+    window.addEventListener('mousemove', (e) => addSparkles(e.clientX, e.clientY, 3));
     window.addEventListener('touchmove', (e) => {
-        if (e.touches[0]) addSparkles(e.touches[0].clientX, e.touches[0].clientY, 2);
+        if (e.touches[0]) addSparkles(e.touches[0].clientX, e.touches[0].clientY, 7);
     });
-    window.addEventListener('click', (e) => addSparkles(e.clientX, e.clientY, 14));
+    window.addEventListener('click', (e) => addSparkles(e.clientX, e.clientY, 25));
 
     function animateSparkles() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -952,12 +1029,13 @@
     }
     animateSparkles();
 
+    // Возвращены фоновые эмодзи (звездочки и подарочки)
     function createFloatingIcons() {
         const bgContainer = document.getElementById('bg-floating-container');
         if (!bgContainer) return;
         
-        const icons = ['🪙', '❄️', '✨', '💎', '⭐'];
-        const totalIcons = 18;
+        const icons = ['🎁', '⭐', '🌟', '💎', '✨', '💖', '🧸', '🎁', '⭐'];
+        const totalIcons = 20;
 
         for (let i = 0; i < totalIcons; i++) {
             const span = document.createElement('span');
@@ -967,10 +1045,26 @@
             span.style.left = Math.random() * 95 + '%';
             span.style.animationDuration = (7 + Math.random() * 7) + 's';
             span.style.animationDelay = (Math.random() * 8) + 's';
-            span.style.fontSize = (16 + Math.random() * 16) + 'px';
+            span.style.fontSize = (16 + Math.random() * 18) + 'px';
             
             bgContainer.appendChild(span);
         }
+    }
+
+    // Логика полета ракеты каждые 20 секунд в верхней части экрана
+    function initRocketTimer() {
+        const triggerRocket = () => {
+            const rocket = document.getElementById('flying-rocket');
+            if (!rocket) return;
+            rocket.classList.remove('fly');
+            void rocket.offsetWidth; // сброс анимации
+            rocket.classList.add('fly');
+        };
+
+        // Запуск первый раз через 3 секунды после загрузки
+        setTimeout(triggerRocket, 3000);
+        // Повторение каждые 20 секунд
+        setInterval(triggerRocket, 20000);
     }
 
     let audioCtx = null;
@@ -1278,6 +1372,8 @@
     window.addEventListener('DOMContentLoaded', () => {
         loadSavedTheme();
         createFloatingIcons();
+        initRocketTimer(); // Запуск таймера пролета ракеты
+        
         document.getElementById('header-username').innerText = '🎁 ' + username;
         document.getElementById('profile-id-input').value = userId;
         document.getElementById('profile-name-input').value = username;
