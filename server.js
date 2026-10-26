@@ -22,6 +22,10 @@ app.get('/', (req, res) => {
 const BOT_TOKEN = process.env.BOT_TOKEN || '8661865774:AAFXJxBonUS_3H69-KMM2FIypPLTAuRlbxQ';
 const bot = new Telegraf(BOT_TOKEN);
 
+// Настраиваем Webhook для Telegraf вместо bot.launch()
+const WEBHOOK_PATH = `/bot${BOT_TOKEN}`;
+app.use(bot.webhookCallback(WEBHOOK_PATH));
+
 const MONGO_URI = process.env.MONGO_URI;
 
 let UserSchema = new mongoose.Schema({
@@ -109,21 +113,6 @@ bot.on('successful_payment', async (ctx) => {
         console.error('Ошибка обработки успешного платежа:', e);
     }
 });
-
-bot.telegram.deleteWebhook({ drop_pending_updates: true })
-    .then(() => {
-        console.log('🧹 Старый Webhook успешно сброшен');
-        return bot.launch();
-    })
-    .then(() => {
-        console.log('🤖 Бот успешно запущен и слушает команды!');
-    })
-    .catch(err => {
-        console.error('🔴 Ошибка запуска Telegraf бота:', err);
-    });
-
-process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));
 
 const giftsData = [
     { name: "Ничего", icon: "❌", price: 0, giftId: null },
@@ -481,6 +470,13 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 10000;
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', async () => {
     console.log(`🚀 Сервер запущен на порту ${PORT}`);
+    try {
+        const webhookUrl = `https://telegram-game-server.onrender.com${WEBHOOK_PATH}`;
+        await bot.telegram.setWebhook(webhookUrl);
+        console.log(`🤖 Telegram Webhook успешно установлен на: ${webhookUrl}`);
+    } catch (err) {
+        console.error('🔴 Ошибка установки Webhook:', err);
+    }
 });
