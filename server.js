@@ -22,7 +22,6 @@ app.get('/', (req, res) => {
 const BOT_TOKEN = process.env.BOT_TOKEN || '8661865774:AAFXJxBonUS_3H69-KMM2FIypPLTAuRlbxQ';
 const bot = new Telegraf(BOT_TOKEN);
 
-// Настраиваем Webhook для Telegraf вместо bot.launch()
 const WEBHOOK_PATH = `/bot${BOT_TOKEN}`;
 app.use(bot.webhookCallback(WEBHOOK_PATH));
 
@@ -69,7 +68,9 @@ bot.start(async (ctx) => {
 
 🎁  **Твой первый подарок уже ждет!** Нажми кнопку ниже, чтобы забрать стартовый бонус и сделать первый запуск!`;
 
-        await ctx.reply(welcomeText, {
+        // Отправляем картинку с текстом (caption) и кнопкой Mini App
+        await ctx.replyWithPhoto('https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=1000&auto=format&fit=crop', {
+            caption: welcomeText,
             parse_mode: 'Markdown',
             reply_markup: {
                 inline_keyboard: [
