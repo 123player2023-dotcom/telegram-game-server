@@ -15,8 +15,11 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json());
 
+// Исправлено: раздача статики из папки public (теперь аудио, видео, картинки и index.html будут доступны)
+app.use(express.static(path.join(__dirname, 'public')));
+
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 const BOT_TOKEN = process.env.BOT_TOKEN || '8661865774:AAFXJxBonUS_3H69-KMM2FIypPLTAuRlbxQ';
@@ -30,7 +33,7 @@ const MONGO_URI = process.env.MONGO_URI;
 let UserSchema = new mongoose.Schema({
     telegramId: { type: String, unique: true, required: true },
     username: String,
-    avatarUrl: { type: String, default: '' }, // <-- Поле для синхронизации аватарки из Telegram
+    avatarUrl: { type: String, default: '' }, // Аватарка из Telegram
     stars: { type: Number, default: 0 },
     inventory: { type: Array, default: [] },
     lastFreeCaseTime: { type: Number, default: 0 },
@@ -69,7 +72,6 @@ bot.start(async (ctx) => {
 
 🎁  **Твой первый подарок уже ждет!** Нажми кнопку ниже, чтобы забрать стартовый бонус и сделать первый запуск!`;
 
-        // Отправляем картинку с текстом (caption) и кнопкой Mini App
         await ctx.replyWithPhoto('https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=1000&auto=format&fit=crop', {
             caption: welcomeText,
             parse_mode: 'Markdown',
@@ -192,7 +194,7 @@ function getFreeRandomItem() {
 
 app.post('/api/login', async (req, res) => {
     try {
-        const { telegramId, username, avatarUrl } = req.body; // <-- Принимаем avatarUrl с фронтенда
+        const { telegramId, username, avatarUrl } = req.body;
         if (!telegramId) return res.status(400).json({ error: 'No telegramId' });
 
         const tIdStr = String(telegramId);
@@ -202,7 +204,7 @@ app.post('/api/login', async (req, res) => {
             user = new UserModel({ 
                 telegramId: tIdStr, 
                 username: username || 'Игрок', 
-                avatarUrl: avatarUrl || '', // <-- Сохраняем при создании
+                avatarUrl: avatarUrl || '', 
                 stars: 0, 
                 inventory: [], 
                 lastFreeCaseTime: 0, 
@@ -215,7 +217,6 @@ app.post('/api/login', async (req, res) => {
                 user.username = username;
                 isUpdated = true;
             }
-            // Синхронизируем аватарку, если она изменилась или появилась
             if (avatarUrl && user.avatarUrl !== avatarUrl) {
                 user.avatarUrl = avatarUrl;
                 isUpdated = true;
@@ -229,7 +230,7 @@ app.post('/api/login', async (req, res) => {
             stars: user.stars, 
             inventory: user.inventory, 
             lastFreeCaseTime: user.lastFreeCaseTime,
-            avatarUrl: user.avatarUrl // <-- Возвращаем avatarUrl на фронтенд
+            avatarUrl: user.avatarUrl 
         });
     } catch (e) {
         res.status(500).json({ error: e.message });
