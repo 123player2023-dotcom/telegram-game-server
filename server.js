@@ -16,7 +16,7 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index_3.html'));
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 const BOT_TOKEN = process.env.BOT_TOKEN || '8661865774:AAFXJxBonUS_3H69-KMM2FIypPLTAuRlbxQ';
@@ -65,18 +65,14 @@ bot.start(async (ctx) => {
 
 🎁  **Твой первый подарок уже ждет!** Нажми кнопку ниже, чтобы забрать стартовый бонус и сделать первый запуск!`;
 
-        await ctx.replyWithPhoto(
-            { source: path.join(__dirname, 'welcome.jpg') },
-            {
-                caption: welcomeText,
-                parse_mode: 'Markdown',
-                reply_markup: {
-                    inline_keyboard: [
-                        [{ text: '🎮 Play', web_app: { url: 'https://telegram-game-server.onrender.com' } }]
-                    ]
-                }
+        await ctx.reply(welcomeText, {
+            parse_mode: 'Markdown',
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: '🎮 Play', web_app: { url: 'https://telegram-game-server.onrender.com' } }]
+                ]
             }
-        );
+        });
     } catch (e) {
         console.error('Ошибка отправки приветствия:', e);
     }
