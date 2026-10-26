@@ -16,11 +16,37 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, 'index_3.html'));
 });
 
 const BOT_TOKEN = process.env.BOT_TOKEN || '8661865774:AAFXJxBonUS_3H69-KMM2FIypPLTAuRlbxQ';
 const bot = new Telegraf(BOT_TOKEN);
+
+const MONGO_URI = process.env.MONGO_URI;
+
+let UserSchema = new mongoose.Schema({
+    telegramId: { type: String, unique: true, required: true },
+    username: String,
+    stars: { type: Number, default: 0 },
+    inventory: { type: Array, default: [] },
+    lastFreeCaseTime: { type: Number, default: 0 },
+    paidCaseCount: { type: Number, default: 0 }
+});
+let UserModel = mongoose.model('User', UserSchema);
+
+async function connectDB() {
+    if (MONGO_URI) {
+        try {
+            await mongoose.connect(MONGO_URI);
+            console.log("🟢 Подключено к MongoDB Atlas");
+        } catch (err) {
+            console.error("🔴 Ошибка подключения к MongoDB:", err);
+        }
+    } else {
+        console.log("⚠️ MONGO_URI не задан, но база данных требуется для корректной работы.");
+    }
+}
+connectDB();
 
 bot.start(async (ctx) => {
     try {
@@ -102,32 +128,6 @@ bot.telegram.deleteWebhook({ drop_pending_updates: true })
 
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
-
-const MONGO_URI = process.env.MONGO_URI;
-
-let UserSchema = new mongoose.Schema({
-    telegramId: { type: String, unique: true, required: true },
-    username: String,
-    stars: { type: Number, default: 0 },
-    inventory: { type: Array, default: [] },
-    lastFreeCaseTime: { type: Number, default: 0 },
-    paidCaseCount: { type: Number, default: 0 }
-});
-let UserModel = mongoose.model('User', UserSchema);
-
-async function connectDB() {
-    if (MONGO_URI) {
-        try {
-            await mongoose.connect(MONGO_URI);
-            console.log("🟢 Подключено к MongoDB Atlas");
-        } catch (err) {
-            console.error("🔴 Ошибка подключения к MongoDB:", err);
-        }
-    } else {
-        console.log("⚠️ MONGO_URI не задан, используется хранение в памяти");
-    }
-}
-connectDB();
 
 const giftsData = [
     { name: "Ничего", icon: "❌", price: 0, giftId: null },
