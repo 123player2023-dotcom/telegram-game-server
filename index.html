@@ -157,7 +157,6 @@
             background: #020205;
         }
 
-        /* Четкий космический фон без размытия */
         .space-background-silhouette {
             position: absolute;
             inset: 0;
@@ -228,7 +227,6 @@
             100% { transform: translateY(-25px) rotate(-8deg) scale(1.05); }
         }
 
-        /* Ракета на самом верхнем слое (z-index: 100) — отлично видна каждые 20 секунд */
         .flying-rocket {
             position: absolute;
             top: 15px;
@@ -306,7 +304,40 @@
             100% { transform: translateY(-110vh) rotate(360deg) scale(1.25); opacity: 0; }
         }
 
-        /* Убран сплошной блюр контейнера приложения, фон теперь абсолютно чистый и резкий */
+        /* Эффект эхо-волн (Ripple / Echo effect) при клике на кнопки */
+        .btn, .mode-card-btn, .switch-tab, .inventory-item, .theme-option, .add-stars-btn, .back-circle-btn, .duel-step-btn {
+            position: relative;
+            overflow: hidden !important;
+            transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s ease, background 0.2s ease;
+            outline: none;
+        }
+
+        .btn:active, .mode-card-btn:active, .switch-tab:active, .inventory-item:active {
+            transform: scale(0.95) !important;
+        }
+
+        .ripple-echo {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.75) 0%, rgba(168, 85, 247, 0.45) 50%, transparent 100%);
+            transform: scale(0);
+            animation: rippleAnimation 0.6s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+            pointer-events: none;
+            z-index: 50;
+            box-shadow: 0 0 18px rgba(168, 85, 247, 0.8);
+        }
+
+        @keyframes rippleAnimation {
+            0% {
+                transform: scale(0);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(4.5);
+                opacity: 0;
+            }
+        }
+
         .app-container { 
             width: 100vw; 
             height: 100dvh; 
@@ -324,18 +355,7 @@
         .header-title { font-size: 15px; font-weight: 700; color: var(--text-main); letter-spacing: 0.3px; display: flex; align-items: center; gap: 6px; }
         .balance-container { display: flex; align-items: center; gap: 8px; }
         .balance-box { background: var(--input-bg); border: 1px solid var(--border-color); padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; color: #fbbf24; display: flex; align-items: center; gap: 5px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
-        .add-stars-btn { background: var(--accent-gradient); color: #fff; border: none; width: 30px; height: 30px; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px var(--echo-color); position: relative; overflow: hidden; }
-
-        button, .mode-card-btn, .switch-tab, .inventory-item, .theme-option, .toggle-switch {
-            position: relative;
-            transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s ease, background 0.2s ease;
-            outline: none;
-            overflow: hidden;
-        }
-
-        button:active, .mode-card-btn:active, .switch-tab:active, .inventory-item:active {
-            transform: scale(0.95) !important;
-        }
+        .add-stars-btn { background: var(--accent-gradient); color: #fff; border: none; width: 30px; height: 30px; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px var(--echo-color); }
 
         .mode-icon-box, .roulette-item, .inventory-item, .upgrade-slot {
             background: rgba(255, 255, 255, 0.05);
@@ -614,11 +634,9 @@
 <div class="video-bg-container">
     <div class="space-background-silhouette"></div>
     
-    <!-- Четкие 3D Текстурированные планеты -->
     <div class="planet-3d planet-gas"></div>
     <div class="planet-3d planet-rocky"></div>
 
-    <!-- Ракета на самом верхнем слое (z-index: 100), пролетает каждые 20 секунд -->
     <div class="flying-rocket" id="flying-rocket">🚀</div>
 
     <video autoplay muted loop playsinline class="bg-game-video" onerror="this.style.display='none';">
@@ -999,6 +1017,25 @@
 </div>
 
 <script>
+    /* Универсальный эффект эхо-волн при клике на кнопки */
+    document.addEventListener('click', function(e) {
+        const targetBtn = e.target.closest('button, .mode-card-btn, .switch-tab, .inventory-item, .theme-option, .add-stars-btn, .back-circle-btn, .duel-step-btn');
+        if (!targetBtn) return;
+
+        const rect = targetBtn.getBoundingClientRect();
+        const ripple = document.createElement('span');
+        ripple.className = 'ripple-echo';
+
+        const size = Math.max(rect.width, rect.height) * 1.8;
+        ripple.style.width = size + 'px';
+        ripple.style.height = size + 'px';
+        ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+        ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+
+        targetBtn.appendChild(ripple);
+        setTimeout(() => ripple.remove(), 600);
+    });
+
     const canvas = document.getElementById('fx-sparkles-canvas');
     const ctx = canvas.getContext('2d');
     let particles = [];
