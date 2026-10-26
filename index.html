@@ -563,6 +563,12 @@
 </head>
 <body>
 
+<!-- АУДИОПЛЕЕР С ЗАЦИКЛИВАНИЕМ САУНДТРЕКА -->
+<audio id="bg-audio" loop preload="auto">
+    <source src="audio.mp3" type="audio/mpeg">
+    Ваш браузер не поддерживает аудиоэлемент.
+</audio>
+
 <!-- ФОНОВОЕ ВИДЕО И СПЕЦЭФФЕКТЫ -->
 <div class="video-bg-container">
     <video autoplay muted loop playsinline class="bg-game-video">
@@ -966,7 +972,7 @@
             this.color = `hsl(${Math.random() * 80 + 250}, 100%, 80%)`;
             this.life = 1;
             this.decay = Math.random() * 0.025 + 0.012;
-            this.isGlint = Math.random() > 0.4; // Часть частиц превращается в сияющие блики-звездочки
+            this.isGlint = Math.random() > 0.4;
         }
         update() {
             this.x += this.speedX;
@@ -981,7 +987,6 @@
             ctx.shadowColor = this.color;
             
             if (this.isGlint) {
-                // Рисуем сияющий ромбовидный блик
                 ctx.beginPath();
                 ctx.moveTo(this.x, this.y - this.size * 1.8);
                 ctx.lineTo(this.x + this.size * 1.8, this.y);
@@ -990,7 +995,6 @@
                 ctx.closePath();
                 ctx.fill();
             } else {
-                // Круглая яркая искра
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
                 ctx.fill();
@@ -1047,7 +1051,6 @@
     let audioCtx = null;
     let musicEnabled = true;
     let sfxEnabled = true;
-    let musicInterval = null;
 
     function initAudio() {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1055,51 +1058,26 @@
     }
 
     function startBackgroundMusic() {
-        if (musicInterval) return;
-        const synthBass = [130.81, 146.83, 164.81, 174.61, 196.00];
-        const synthLead = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25];
-        let step = 0;
-
-        musicInterval = setInterval(() => {
-            if (!musicEnabled) return;
-            try {
-                initAudio();
-                if (!audioCtx) return;
-
-                const now = audioCtx.currentTime;
-                const bassFreq = synthBass[step % synthBass.length];
-                const bassOsc = audioCtx.createOscillator();
-                const bassGain = audioCtx.createGain();
-                bassOsc.type = 'sawtooth';
-                bassOsc.frequency.setValueAtTime(bassFreq, now);
-                bassGain.gain.setValueAtTime(0.015, now);
-                bassGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
-                bassOsc.connect(bassGain);
-                bassGain.connect(audioCtx.destination);
-                bassOsc.start(now);
-                bassOsc.stop(now + 0.35);
-
-                if (step % 2 === 0) {
-                    const leadFreq = synthLead[(step * 2) % synthLead.length];
-                    const leadOsc = audioCtx.createOscillator();
-                    const leadGain = audioCtx.createGain();
-                    leadOsc.type = 'square';
-                    leadOsc.frequency.setValueAtTime(leadFreq, now + 0.1);
-                    leadGain.gain.setValueAtTime(0.01, now + 0.1);
-                    leadGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
-                    leadOsc.connect(leadGain);
-                    leadGain.connect(audioCtx.destination);
-                    leadOsc.start(now + 0.1);
-                    leadOsc.stop(now + 0.3);
-                }
-                step++;
-            } catch(e) {}
-        }, 400);
+        const bgAudio = document.getElementById('bg-audio');
+        if (bgAudio && musicEnabled) {
+            bgAudio.play().catch(e => {
+                console.log('Автовоспроизведение заблокировано браузером. Ожидается действие пользователя.');
+            });
+        }
     }
 
     function toggleMusicSwitch() {
         musicEnabled = !musicEnabled;
+        const bgAudio = document.getElementById('bg-audio');
         document.getElementById('toggle-music').classList.toggle('active', musicEnabled);
+        
+        if (bgAudio) {
+            if (musicEnabled) {
+                bgAudio.play().catch(e => console.log(e));
+            } else {
+                bgAudio.pause();
+            }
+        }
         playClickSound();
     }
 
@@ -1384,7 +1362,15 @@
         syncWithServer();
         buildTrack('roulette-track');
         renderReferralStats();
-        startBackgroundMusic();
+        
+        // Автозапуск музыки при первом клике (для обхода ограничений автоплея)
+        const startAudioHandler = () => {
+            startBackgroundMusic();
+            window.removeEventListener('click', startAudioHandler);
+            window.removeEventListener('touchstart', startAudioHandler);
+        };
+        window.addEventListener('click', startAudioHandler);
+        window.addEventListener('touchstart', startAudioHandler);
     });
 
     function renderReferralStats() {
