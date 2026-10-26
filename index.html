@@ -14,7 +14,7 @@
     </script>
 
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://telegram-game-server.onrender.com/socket.io/socket.io.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     
     <style>
@@ -130,11 +130,6 @@
         ::-webkit-scrollbar-thumb:active {
             background: var(--accent-color);
         }
-        ::-webkit-scrollbar-button {
-            display: none;
-            width: 0;
-            height: 0;
-        }
         * {
             scrollbar-width: thin;
             scrollbar-color: var(--border-color) transparent;
@@ -150,7 +145,6 @@
         html, body { width: 100%; height: 100%; overflow: hidden; background-color: var(--bg-html); color: var(--text-main); transition: background 0.3s ease, color 0.3s ease; }
         body { display: flex; justify-content: center; align-items: center; }
         
-        /* ВИДЕО-ФОН И УСИЛЕННЫЕ СПЕЦЭФФЕКТЫ */
         .video-bg-container {
             position: fixed;
             top: 0;
@@ -160,13 +154,13 @@
             z-index: 0;
             overflow: hidden;
             pointer-events: none;
+            background: #0d0d11;
         }
         .bg-game-video {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-        /* Усиленное неоновое свечение */
         .fx-neon-glow {
             position: absolute;
             inset: 0;
@@ -178,7 +172,6 @@
             0% { opacity: 0.5; }
             100% { opacity: 1; }
         }
-        /* Холст для ярких искр и сияющих бликов */
         #fx-sparkles-canvas {
             position: absolute;
             inset: 0;
@@ -188,7 +181,6 @@
             z-index: 2;
         }
 
-        /* Плавающие фоновые элементы */
         .bg-floating-icons {
             position: absolute;
             inset: 0;
@@ -226,58 +218,8 @@
             overflow: hidden;
         }
 
-        button::before, .mode-card-btn::before, .switch-tab::before {
-            content: '';
-            position: absolute;
-            top: -100%;
-            left: -200%;
-            width: 120%;
-            height: 300%;
-            background: linear-gradient(
-                120deg, 
-                transparent 0%, 
-                rgba(255, 255, 255, 0.0) 25%, 
-                rgba(255, 255, 255, 0.25) 50%, 
-                rgba(255, 255, 255, 0.0) 75%, 
-                transparent 100%
-            );
-            transform: rotate(20deg);
-            pointer-events: none;
-            animation: buttonGlintSweep 5s ease-in-out infinite;
-            z-index: 2;
-        }
-
-        @keyframes buttonGlintSweep {
-            0% { left: -200%; }
-            35% { left: 200%; }
-            100% { left: 200%; }
-        }
-
         button:active, .mode-card-btn:active, .switch-tab:active, .inventory-item:active {
             transform: scale(0.95) !important;
-        }
-
-        button::after, .mode-card-btn::after, .switch-tab::after {
-            content: '';
-            position: absolute;
-            inset: -4px;
-            border-radius: inherit;
-            background: inherit;
-            opacity: 0;
-            z-index: -1;
-            pointer-events: none;
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-
-        button:active::after, .mode-card-btn:active::after {
-            opacity: 0.6;
-            transform: scale(1.18);
-            animation: buttonEchoPulse 0.4s ease-out forwards;
-        }
-
-        @keyframes buttonEchoPulse {
-            0% { opacity: 0.7; transform: scale(1); box-shadow: 0 0 0 0 var(--echo-color); }
-            100% { opacity: 0; transform: scale(1.3); box-shadow: 0 0 25px 15px transparent; }
         }
 
         .mode-icon-box, .roulette-item, .inventory-item, .upgrade-slot {
@@ -287,16 +229,6 @@
             border: 1px solid rgba(255, 255, 255, 0.15) !important;
             box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.2), 0 4px 14px rgba(0, 0, 0, 0.2);
             position: relative;
-        }
-
-        .mode-icon-box::after, .inventory-item::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 45%;
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.0) 100%);
-            border-radius: inherit;
-            pointer-events: none;
         }
 
         .star-item-glow {
@@ -362,7 +294,6 @@
 
         .case-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 20px; padding: 18px; text-align: center; max-width: 400px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
         
-        /* УЛУЧШЕННЫЙ КОНТРАСТ И ПОДСВЕТКА РУЛЕТКИ (СВАЙПА) */
         .roulette-container { 
             position: relative; 
             width: 100%; 
@@ -563,17 +494,13 @@
 </head>
 <body>
 
-<!-- АУДИОПЛЕЕР С ЗАЦИКЛИВАНИЕМ САУНДТРЕКА -->
 <audio id="bg-audio" loop preload="auto">
     <source src="audio.mp3" type="audio/mpeg">
-    Ваш браузер не поддерживает аудиоэлемент.
 </audio>
 
-<!-- ФОНОВОЕ ВИДЕО И СПЕЦЭФФЕКТЫ -->
 <div class="video-bg-container">
-    <video autoplay muted loop playsinline class="bg-game-video">
+    <video autoplay muted loop playsinline class="bg-game-video" onerror="this.style.display='none';">
         <source src="background.mp4" type="video/mp4">
-        Ваш браузер не поддерживает видео-фон.
     </video>
     <div class="fx-neon-glow"></div>
     <div class="bg-floating-icons" id="bg-floating-container"></div>
@@ -915,8 +842,8 @@
     </div>
 
     <div class="modal-overlay" id="deposit-modal">
+        <div class="modal-close-cross" onclick="closeDepositModal()">✖</div>
         <div class="modal-card">
-            <div class="modal-close-cross" onclick="closeDepositModal()">✖</div>
             <div style="font-size:17px; font-weight:700; margin-bottom:6px;">Пополнение баланса</div>
             <div style="font-size:12px; color:var(--text-muted);">Выберите удобный способ:</div>
             <div class="deposit-options">
@@ -950,7 +877,6 @@
 </div>
 
 <script>
-    // УЛУЧШЕННЫЙ ДВИЖОК ИСКР И ЯРКИХ МИГАЮЩИХ БЛИКОВ ПОД КУРСОРОМ / ПАЛЬЦЕМ
     const canvas = document.getElementById('fx-sparkles-canvas');
     const ctx = canvas.getContext('2d');
     let particles = [];
@@ -1026,7 +952,6 @@
     }
     animateSparkles();
 
-    // ПЛАВАЮЩИЕ МИКРО-ЭЛЕМЕНТЫ
     function createFloatingIcons() {
         const bgContainer = document.getElementById('bg-floating-container');
         if (!bgContainer) return;
@@ -1061,7 +986,7 @@
         const bgAudio = document.getElementById('bg-audio');
         if (bgAudio && musicEnabled) {
             bgAudio.play().catch(e => {
-                console.log('Автовоспроизведение заблокировано браузером. Ожидается действие пользователя.');
+                console.log('Автовоспроизведение заблокировано браузером.');
             });
         }
     }
@@ -1224,8 +1149,7 @@
 
     let username = telegramUser ? (telegramUser.first_name || telegramUser.username || 'Игрок') : (localStorage.getItem('tg_username') || 'Игрок_' + userId.slice(-4));
 
-    const SERVER_URL = 'https://telegram-game-server.onrender.com';
-    const socket = io(SERVER_URL);
+    const socket = io();
 
     socket.on('connect', () => {
         socket.emit('login_socket', { telegramId: userId });
@@ -1283,7 +1207,7 @@
 
     async function syncWithServer() {
         try {
-            const response = await fetch(`${SERVER_URL}/api/login`, {
+            const response = await fetch(`/api/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ telegramId: userId, username: username })
@@ -1363,7 +1287,6 @@
         buildTrack('roulette-track');
         renderReferralStats();
         
-        // Автозапуск музыки при первом клике (для обхода ограничений автоплея)
         const startAudioHandler = () => {
             startBackgroundMusic();
             window.removeEventListener('click', startAudioHandler);
@@ -1705,7 +1628,7 @@
             document.getElementById('spin-btn').disabled = true;
 
             try {
-                const res = await fetch(`${SERVER_URL}/api/open-case`, {
+                const res = await fetch(`/api/open-case`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ telegramId: userId, mode: currentMode })
@@ -1987,7 +1910,7 @@
     async function updateBalance() {
         updateBalanceUI();
         try {
-            await fetch(`${SERVER_URL}/api/update-stars`, {
+            await fetch(`/api/update-stars`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ telegramId: userId, stars: userStars })
@@ -2003,7 +1926,7 @@
         renderInventory();
 
         try {
-            await fetch(`${SERVER_URL}/api/update-inventory`, {
+            await fetch(`/api/update-inventory`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ telegramId: userId, inventory: inventory })
@@ -2092,7 +2015,7 @@
         }
 
         try {
-            const res = await fetch(`${SERVER_URL}/api/withdraw-gift`, {
+            const res = await fetch(`/api/withdraw-gift`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ telegramId: userId, itemIndex: index })
@@ -2217,7 +2140,7 @@
         const timeoutId = setTimeout(() => controller.abort(), 25000);
 
         try {
-            const res = await fetch(`${SERVER_URL}/api/create-invoice`, {
+            const res = await fetch(`/api/create-invoice`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ telegramId: userId, starsAmount: amount }),
@@ -2331,7 +2254,7 @@
         playDepositSuccessSound();
 
         try {
-            const res = await fetch(`${SERVER_URL}/api/update-stars`, {
+            const res = await fetch(`/api/update-stars`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ telegramId: userId, stars: userStars })
