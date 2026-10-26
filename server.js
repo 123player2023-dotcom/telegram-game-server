@@ -30,6 +30,7 @@ const MONGO_URI = process.env.MONGO_URI;
 let UserSchema = new mongoose.Schema({
     telegramId: { type: String, unique: true, required: true },
     username: String,
+    avatarUrl: { type: String, default: '' },
     stars: { type: Number, default: 0 },
     inventory: { type: Array, default: [] },
     lastFreeCaseTime: { type: Number, default: 0 },
@@ -46,7 +47,7 @@ async function connectDB() {
             console.error("🔴 Ошибка подключения к MongoDB:", err);
         }
     } else {
-        console.log("⚠️ MONGO_URI не задан, но база данных требуется для корректной работы.");
+        console.log("⚠️ MONGO_URI не задан. Используется локальная память/тестовый режим.");
     }
 }
 connectDB();
@@ -64,17 +65,14 @@ bot.start(async (ctx) => {
 
 ⚔️  *Онлайн-дуэли* — сражайся с другими игроками в реальном времени и забирай их куш!
 
-⚡  *Апгрейд предметов* — рискуй, чтобы превратить обычный подарок в эксклюзивный артефакт.
+⚡  *Апгрейд предметов* — рискуй, чтобы превратить обычный подарок в эксклюзивный артефакт.`;
 
-🎁  **Твой первый подарок уже ждет!** Нажми кнопку ниже, чтобы забрать стартовый бонус и сделать первый запуск!`;
-
-        // Отправляем картинку с текстом (caption) и кнопкой Mini App
         await ctx.replyWithPhoto('https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=1000&auto=format&fit=crop', {
             caption: welcomeText,
             parse_mode: 'Markdown',
             reply_markup: {
                 inline_keyboard: [
-                    [{ text: '🎮 Play', web_app: { url: 'https://telegram-game-server.onrender.com' } }]
+                    [{ text: '🎮 Играть', web_app: { url: 'https://telegram-game-server.onrender.com' } }]
                 ]
             }
         });
@@ -107,11 +105,10 @@ bot.on('successful_payment', async (ctx) => {
                         socket.emit('balance_updated', { stars: user.stars });
                     }
                 });
-                console.log(`⭐ Пользователю ${telegramId} зачислено ${starsPaid} звезд через Telegram Stars.`);
             }
         }
     } catch (e) {
-        console.error('Ошибка обработки успешного платежа:', e);
+        console.error('Ошибка обработки платежа:', e);
     }
 });
 
@@ -142,71 +139,47 @@ function getPaidRandomItem(paidCount) {
         if (rand < 50) return giftsData[0];
         if (rand < 62.5) return giftsData[1];
         if (rand < 75) return giftsData[2];
-        if (rand < 82.5) return giftsData[3];
         if (rand < 90) return giftsData[4];
-        if (rand < 94.5) return giftsData[5];
-        if (rand < 99) return giftsData[6];
-        if (rand < 99.5) return giftsData[7];
         return giftsData[8];
     }
-}
-
-function getPaid50RandomItem() {
-    const rand = Math.random() * 100;
-    if (rand < 30) return giftsData[0]; 
-    if (rand < 44) return giftsData[1]; 
-    if (rand < 58) return giftsData[2]; 
-    if (rand < 65) return giftsData[3]; 
-    if (rand < 72) return giftsData[4]; 
-    if (rand < 83) return giftsData[5]; 
-    if (rand < 93) return giftsData[6]; 
-    if (rand < 98) return giftsData[7]; 
-    if (rand < 99.3) return giftsData[8]; 
-    if (rand < 99.8) return giftsData[9]; 
-    return giftsData[10]; 
-}
-
-function getPaid100RandomItem() {
-    const rand = Math.random() * 100;
-    if (rand < 15) return giftsData[1];
-    if (rand < 30) return giftsData[2];
-    if (rand < 45) return giftsData[3];
-    if (rand < 60) return giftsData[4];
-    if (rand < 75) return giftsData[5];
-    if (rand < 90) return giftsData[6];
-    if (rand < 94) return giftsData[7];
-    if (rand < 98) return giftsData[8];
-    if (rand < 99) return giftsData[9];
-    if (rand < 99.5) return giftsData[11];
-    return giftsData[12];
 }
 
 function getFreeRandomItem() {
     const rand = Math.random() * 100;
     if (rand < 85) return giftsData[0];
     if (rand < 93) return giftsData[1];
-    if (rand < 98) return giftsData[2];
-    return giftsData[3];
+    return giftsData[2];
 }
 
 app.post('/api/login', async (req, res) => {
     try {
-        const { telegramId, username } = req.body;
+        const { telegramId, username, avatarUrl } = req.body;
         if (!telegramId) return res.status(400).json({ error: 'No telegramId' });
 
         const tIdStr = String(telegramId);
         let user = await UserModel.findOne({ telegramId: tIdStr });
         if (!user) {
-            user = new UserModel({ telegramId: tIdStr, username: username || 'Игрок', stars: 0, inventory: [], lastFreeCaseTime: 0, paidCaseCount: 0 });
+            user = new UserModel({ 
+                telegramId: tIdStr, 
+                username: username || 'Игрок', 
+                avatarUrl: avatarUrl || '',
+                stars: 100, 
+                inventory: [], 
+                lastFreeCaseTime: 0, 
+                paidCaseCount: 0 
+            });
             await user.save();
-        } else if (username && user.username !== username) {
-            user.username = username;
-            await user.save();
+        } else {
+            let updated = false;
+            if (username && user.username !== username) { user.username = username; updated = true; }
+            if (avatarUrl && user.avatarUrl !== avatarUrl) { user.avatarUrl = avatarUrl; updated = true; }
+            if (updated) await user.save();
         }
         res.json({ 
             stars: user.stars, 
             inventory: user.inventory, 
-            lastFreeCaseTime: user.lastFreeCaseTime 
+            lastFreeCaseTime: user.lastFreeCaseTime,
+            avatarUrl: user.avatarUrl
         });
     } catch (e) {
         res.status(500).json({ error: e.message });
@@ -226,246 +199,116 @@ app.post('/api/open-case', async (req, res) => {
         else if (mode === 'free') cost = 0;
 
         let winningItem;
-
         if (mode === 'free') {
             const now = Date.now();
-            const cooldown = 24 * 60 * 60 * 1000;
-            if (now - user.lastFreeCaseTime < cooldown) {
-                return res.status(400).json({ error: 'Кулдаун бесплатного кейса еще не истек!' });
+            if (now - user.lastFreeCaseTime < 24 * 60 * 60 * 1000) {
+                return res.status(400).json({ error: 'Кулдаун бесплатного кейса не истек!' });
             }
             user.lastFreeCaseTime = now;
             winningItem = getFreeRandomItem();
         } else {
-            if (user.stars < cost) {
-                return res.status(400).json({ error: 'Недостаточно звезд на балансе!' });
-            }
+            if (user.stars < cost) return res.status(400).json({ error: 'Недостаточно звезд!' });
             user.stars -= cost;
-
-            if (mode === 'paid') {
-                user.paidCaseCount += 1;
-                winningItem = getPaidRandomItem(user.paidCaseCount);
-            } else if (mode === 'paid50') {
-                winningItem = getPaid50RandomItem();
-            } else if (mode === 'paid100') {
-                winningItem = getPaid100RandomItem();
-            }
+            user.paidCaseCount += 1;
+            winningItem = getPaidRandomItem(user.paidCaseCount);
         }
 
         const uniqueId = Date.now() + Math.random();
         const lockoutTime = Date.now() + 5 * 60 * 1000;
-        const numericPrice = winningItem.price;
-
-        if (numericPrice > 0) {
-            user.inventory.push({
-                ...winningItem,
-                uniqueId,
-                numericPrice,
-                availableAt: new Date(lockoutTime)
-            });
+        if (winningItem.price > 0) {
+            user.inventory.push({ ...winningItem, uniqueId, numericPrice: winningItem.price, availableAt: new Date(lockoutTime) });
         }
-
         await user.save();
 
-        res.json({
-            success: true,
-            stars: user.stars,
-            inventory: user.inventory,
-            winningItem,
-            lastFreeCaseTime: user.lastFreeCaseTime
-        });
+        res.json({ success: true, stars: user.stars, inventory: user.inventory, winningItem, lastFreeCaseTime: user.lastFreeCaseTime });
     } catch (e) {
-        console.error('Ошибка открытия кейса:', e);
-        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+        res.status(500).json({ error: 'Внутренняя ошибка' });
     }
 });
 
 app.post('/api/update-stars', async (req, res) => {
     try {
         const { telegramId, stars } = req.body;
-        const tIdStr = String(telegramId);
-        let user = await UserModel.findOne({ telegramId: tIdStr });
-        if (user) {
-            user.stars = stars;
-            await user.save();
-            res.json({ success: true, stars: user.stars });
-        } else {
-            res.status(404).json({ error: 'User not found' });
-        }
-    } catch (e) {
-        res.status(500).json({ error: e.message });
-    }
+        let user = await UserModel.findOne({ telegramId: String(telegramId) });
+        if (user) { user.stars = stars; await user.save(); res.json({ success: true, stars: user.stars }); }
+        else res.status(404).json({ error: 'User not found' });
+    } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/update-inventory', async (req, res) => {
     try {
         const { telegramId, inventory } = req.body;
-        const tIdStr = String(telegramId);
-        let user = await UserModel.findOne({ telegramId: tIdStr });
-        if (user) {
-            user.inventory = inventory;
-            await user.save();
-            res.json({ success: true });
-        } else {
-            res.status(404).json({ error: 'User not found' });
-        }
-    } catch (e) {
-        res.status(500).json({ error: e.message });
-    }
+        let user = await UserModel.findOne({ telegramId: String(telegramId) });
+        if (user) { user.inventory = inventory; await user.save(); res.json({ success: true }); }
+        else res.status(404).json({ error: 'User not found' });
+    } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/withdraw-gift', async (req, res) => {
     try {
         const { telegramId, itemIndex } = req.body;
-        const tIdStr = String(telegramId);
-        let user = await UserModel.findOne({ telegramId: tIdStr });
-        
+        let user = await UserModel.findOne({ telegramId: String(telegramId) });
         if (!user || !user.inventory || user.inventory[itemIndex] === undefined) {
-            return res.status(404).json({ success: false, error: 'Предмет не найден в инвентаре' });
+            return res.status(404).json({ success: false, error: 'Предмет не найден' });
         }
-
         const item = user.inventory[itemIndex];
-        const now = Date.now();
-        if (item.availableAt && now < new Date(item.availableAt).getTime()) {
-            return res.status(400).json({ success: false, error: 'Не истек 5-минутный кулдаун вывода!' });
-        }
-
-        if (!item.giftId) {
-            user.inventory.splice(itemIndex, 1);
-            await user.save();
-            return res.json({ success: true, inventory: user.inventory });
-        }
-
         user.inventory.splice(itemIndex, 1);
         await user.save();
 
         try {
-            await bot.telegram.callApi('sendGift', {
-                user_id: parseInt(tIdStr),
-                gift_id: item.giftId
-            });
+            if (item.giftId) {
+                await bot.telegram.callApi('sendGift', { user_id: parseInt(telegramId), gift_id: item.giftId });
+            }
             return res.json({ success: true, inventory: user.inventory });
         } catch (tgError) {
-            console.error('Ошибка Telegram API:', tgError?.response?.description || tgError.message);
             user.inventory.splice(itemIndex, 0, item);
             await user.save();
-
-            let errReason = tgError?.response?.description || 'Ошибка Telegram при отправке подарка';
-            if (errReason.includes('not enough stars')) {
-                errReason = 'У бота на балансе недостаточно Telegram Stars!';
-            }
-            return res.json({ success: false, error: errReason, inventory: user.inventory });
+            return res.json({ success: false, error: 'Ошибка отправки подарка в Telegram', inventory: user.inventory });
         }
-    } catch (e) {
-        console.error(e);
-        res.status(500).json({ success: false, error: 'Внутренняя ошибка сервера' });
-    }
+    } catch (e) { res.status(500).json({ success: false, error: 'Ошибка сервера' }); }
 });
 
 app.post('/api/create-invoice', async (req, res) => {
     try {
         const { telegramId, starsAmount } = req.body;
-        if (!telegramId || !starsAmount) {
-            return res.status(400).json({ error: 'Неверные параметры запроса' });
-        }
-
-        const prices = [{ label: `${starsAmount} Telegram Stars`, amount: parseInt(starsAmount) }];
-        
-        const invoicePromise = bot.telegram.createInvoiceLink({
+        const invoiceLink = await bot.telegram.createInvoiceLink({
             title: 'Пополнение баланса',
-            description: `Пополнение баланса на ${starsAmount} ⭐ в игре`,
+            description: `Пополнение на ${starsAmount} ⭐`,
             payload: `deposit_${String(telegramId)}_${Date.now()}`,
             currency: 'XTR',
-            prices: prices
+            prices: [{ label: `${starsAmount} Telegram Stars`, amount: parseInt(starsAmount) }]
         });
-
-        const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Telegram API timeout')), 10000)
-        );
-
-        const invoiceLink = await Promise.race([invoicePromise, timeoutPromise]);
         res.json({ invoiceLink });
     } catch (e) {
-        console.error('Ошибка создания инвойса:', e.message);
-        res.status(500).json({ error: 'Не удалось создать счет. Попробуйте еще раз.' });
+        res.status(500).json({ error: 'Не удалось создать счет' });
     }
 });
 
 let duelQueue = [];
 io.on('connection', (socket) => {
-    socket.on('login_socket', (data) => {
-        if (data && data.telegramId) {
-            socket.telegramId = String(data.telegramId);
-        }
-    });
-
-    socket.on('cancel_duel', () => {
-        duelQueue = duelQueue.filter(item => item.socket.id !== socket.id);
-    });
-
     socket.on('find_duel', async (data) => {
         const { telegramId, username, bet } = data;
-        const tIdStr = String(telegramId);
-        socket.telegramId = tIdStr;
-        try {
-            let user = await UserModel.findOne({ telegramId: tIdStr });
-            if (!user || user.stars < bet) {
-                socket.emit('duel_error', { error: 'Недостаточно звезд на балансе!' });
-                return;
-            }
-            user.stars -= bet;
-            await user.save();
-            socket.emit('balance_updated', { stars: user.stars });
+        let user = await UserModel.findOne({ telegramId: String(telegramId) });
+        if (!user || user.stars < bet) {
+            socket.emit('duel_error', { error: 'Недостаточно звезд!' });
+            return;
+        }
+        user.stars -= bet;
+        await user.save();
+        socket.emit('balance_updated', { stars: user.stars });
 
-            duelQueue.push({ socket, telegramId: tIdStr, username, bet });
-            if (duelQueue.length >= 2) {
-                let p1 = duelQueue.shift();
-                let p2 = duelQueue.shift();
+        duelQueue.push({ socket, telegramId: String(telegramId), username, bet });
+        if (duelQueue.length >= 2) {
+            let p1 = duelQueue.shift();
+            let p2 = duelQueue.shift();
+            let p1Wins = Math.random() < 0.5;
+            let gift = { name: "Подарочек", icon: "🎁", price: 25, giftId: "5170250947678437525" };
 
-                let p1Bet = p1.bet;
-                let p2Bet = p2.bet;
-                let p1WinChance = 0.5;
-
-                if (p1Bet > p2Bet) {
-                    let ratio = p1Bet / p2Bet;
-                    p1WinChance = ratio >= 2 ? 0.75 : 0.60;
-                } else if (p2Bet > p1Bet) {
-                    let ratio = p2Bet / p1Bet;
-                    p1WinChance = ratio >= 2 ? 0.25 : 0.40;
-                }
-
-                let p1Wins = Math.random() < p1WinChance;
-
-                const cheapGifts = [
-                    { name: "Сердце", icon: "💖", price: 15, giftId: "5170145012310081615" },
-                    { name: "Мишка", icon: "🧸", price: 15, giftId: "5170233102089322756" }
-                ];
-                const mediumGifts = [
-                    { name: "Подарочек", icon: "🎁", price: 25, giftId: "5170250947678437525" },
-                    { name: "Букет", icon: "💐", price: 25, giftId: "5168103777563050263" }
-                ];
-                const expensiveGifts = [
-                    { name: "Шампанское", icon: "🍾", price: 50, giftId: "6028601630662853006" },
-                    { name: "Ракета", icon: "🚀", price: 50, giftId: "5170564780938756245" }
-                ];
-
-                let g1, g2;
-                if (p1Wins) {
-                    g1 = Math.random() < 0.7 ? expensiveGifts[Math.floor(Math.random() * expensiveGifts.length)] : mediumGifts[Math.floor(Math.random() * mediumGifts.length)];
-                    g2 = Math.random() < 0.7 ? cheapGifts[Math.floor(Math.random() * cheapGifts.length)] : mediumGifts[Math.floor(Math.random() * mediumGifts.length)];
-                } else {
-                    g1 = Math.random() < 0.7 ? cheapGifts[Math.floor(Math.random() * cheapGifts.length)] : mediumGifts[Math.floor(Math.random() * mediumGifts.length)];
-                    g2 = Math.random() < 0.7 ? expensiveGifts[Math.floor(Math.random() * expensiveGifts.length)] : mediumGifts[Math.floor(Math.random() * mediumGifts.length)];
-                }
-
-                p1.socket.emit('duel_started', { opponentName: p2.username, isWinner: p1Wins, myGift: g1, opponentGift: g2 });
-                p2.socket.emit('duel_started', { opponentName: p1.username, isWinner: !p1Wins, myGift: g2, opponentGift: g1 });
-            }
-        } catch (e) {
-            socket.emit('duel_error', { error: 'Ошибка сервера' });
+            p1.socket.emit('duel_started', { opponentName: p2.username, isWinner: p1Wins, myGift: gift, opponentGift: gift });
+            p2.socket.emit('duel_started', { opponentName: p1.username, isWinner: !p1Wins, myGift: gift, opponentGift: gift });
         }
     });
-
-    socket.on('disconnect', () => {
+    socket.on('cancel_duel', () => {
         duelQueue = duelQueue.filter(item => item.socket.id !== socket.id);
     });
 });
@@ -474,10 +317,6 @@ const PORT = process.env.PORT || 10000;
 server.listen(PORT, '0.0.0.0', async () => {
     console.log(`🚀 Сервер запущен на порту ${PORT}`);
     try {
-        const webhookUrl = `https://telegram-game-server.onrender.com${WEBHOOK_PATH}`;
-        await bot.telegram.setWebhook(webhookUrl);
-        console.log(`🤖 Telegram Webhook успешно установлен на: ${webhookUrl}`);
-    } catch (err) {
-        console.error('🔴 Ошибка установки Webhook:', err);
-    }
+        await bot.telegram.setWebhook(`https://telegram-game-server.onrender.com${WEBHOOK_PATH}`);
+    } catch (err) {}
 });
