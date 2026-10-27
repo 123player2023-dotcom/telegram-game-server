@@ -1165,11 +1165,39 @@
         }
     }
 
-    window.addEventListener('mousemove', (e) => addSparkles(e.clientX, e.clientY, 6));
-    window.addEventListener('touchmove', (e) => {
-        if (e.touches[0]) addSparkles(e.touches[0].clientX, e.touches[0].clientY, 14); // Плотный и яркий шлейф при свайпе пальцем
-    });
-    window.addEventListener('click', (e) => addSparkles(e.clientX, e.clientY, 35));
+    let lastTouchX = 0;
+let lastTouchY = 0;
+
+window.addEventListener('touchstart', (e) => {
+    if (e.touches[0]) {
+        lastTouchX = e.touches[0].clientX;
+        lastTouchY = e.touches[0].clientY;
+    }
+});
+
+// Звездочки генерируются строго при движении (по 6 штук) и останавливаются при удержании пальца
+window.addEventListener('touchmove', (e) => {
+    if (e.touches[0]) {
+        const currentX = e.touches[0].clientX;
+        const currentY = e.touches[0].clientY;
+        
+        const distance = Math.hypot(currentX - lastTouchX, currentY - lastTouchY);
+        
+        if (distance > 4) { 
+            addSparkles(currentX, currentY, 6);
+            lastTouchX = currentX;
+            lastTouchY = currentY;
+        }
+    }
+});
+
+window.addEventListener('mousemove', (e) => {
+    addSparkles(e.clientX, e.clientY, 6);
+});
+
+window.addEventListener('click', (e) => {
+    addSparkles(e.clientX, e.clientY, 25);
+});
 
     function animateSparkles() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
