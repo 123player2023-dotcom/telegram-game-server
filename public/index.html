@@ -294,13 +294,13 @@
         .floating-icon {
             position: absolute;
             bottom: -50px;
-            font-size: 26px;
-            opacity: 1; /* Убираем полупрозрачность — иконки максимально яркие */
+            font-size: 22px;
+            opacity: 0.8; /* Мягкая прозрачность для фона */
             animation: floatUp 8s linear infinite;
-            /* Мощное двойное свечение: яркое золотисто-желтое + неоновое */
-            filter: drop-shadow(0 0 25px rgba(251, 191, 36, 1)) drop-shadow(0 0 12px rgba(236, 72, 153, 1));
-            text-shadow: 0 0 15px rgba(255, 255, 255, 0.9);
+            /* Аккуратное, сдержанное свечение без лишней «кислотности» */
+            filter: drop-shadow(0 0 12px rgba(251, 191, 36, 0.7)) drop-shadow(0 0 8px rgba(168, 85, 247, 0.7));
         }
+        
         @keyframes floatUp {
             0% { transform: translateY(0) rotate(0deg) scale(0.8); opacity: 0; }
             15% { opacity: 0.7; }
@@ -371,26 +371,25 @@
 
         .star-item-glow {
             position: relative;
-            border: 2px solid #fde047 !important;
-            box-shadow: 0 0 35px rgba(251, 191, 36, 1), inset 0 0 18px rgba(251, 191, 36, 0.7) !important;
-            animation: starPulseGlow 2s ease-in-out infinite alternate !important;
-            filter: brightness(1.25);
+            border: 1px solid rgba(251, 191, 36, 0.8) !important;
+            box-shadow: 0 0 18px rgba(251, 191, 36, 0.35), inset 0 0 10px rgba(251, 191, 36, 0.2) !important;
+            animation: starPulseGlow 3s ease-in-out infinite alternate !important;
         }
 
         .star-item-glow span.item-name {
-            color: #fde047 !important;
-            font-weight: 800 !important;
-            text-shadow: 0 0 12px rgba(251, 191, 36, 1);
+            color: #fbbf24 !important;
+            font-weight: 700 !important;
+            text-shadow: 0 0 8px rgba(251, 191, 36, 0.6);
         }
 
         @keyframes starPulseGlow {
             0% {
-                box-shadow: 0 0 20px rgba(251, 191, 36, 0.7), inset 0 0 10px rgba(251, 191, 36, 0.4);
-                border-color: rgba(253, 224, 71, 0.7) !important;
+                box-shadow: 0 0 12px rgba(251, 191, 36, 0.25), inset 0 0 6px rgba(251, 191, 36, 0.1);
+                border-color: rgba(251, 191, 36, 0.6) !important;
             }
             100% {
-                box-shadow: 0 0 45px rgba(251, 191, 36, 1), inset 0 0 22px rgba(251, 191, 36, 0.8);
-                border-color: rgba(253, 224, 71, 1) !important;
+                box-shadow: 0 0 24px rgba(251, 191, 36, 0.5), inset 0 0 12px rgba(251, 191, 36, 0.25);
+                border-color: rgba(251, 191, 36, 0.9) !important;
             }
         }
 
