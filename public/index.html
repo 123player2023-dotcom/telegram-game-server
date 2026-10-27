@@ -1134,10 +1134,10 @@
             ctx.translate(this.x, this.y);
             ctx.rotate(this.rotation);
             
-            // Насыщенное золотое свечение, как на эталонной текстуре
-            ctx.fillStyle = '#fef3c7'; // яркий сияющий центр
-            ctx.shadowBlur = 30;
-            ctx.shadowColor = '#fbbf24'; // золотой ореол
+            // Оптимизированное свечение без лагов для мобильных устройств
+        ctx.fillStyle = '#fef3c7'; 
+        ctx.shadowBlur = 10; // Снизили с 30 до 10, чтобы телефон не грелся и не лагал
+        ctx.shadowColor = '#fbbf24';
             
             // Рисуем красивую сияющую четырехлучевую звезду
             ctx.beginPath();
@@ -1183,8 +1183,9 @@ window.addEventListener('touchmove', (e) => {
         
         const distance = Math.hypot(currentX - lastTouchX, currentY - lastTouchY);
         
-        if (distance > 4) { 
-            addSparkles(currentX, currentY, 6);
+        // Увеличили дистанцию до 12, чтобы на мобильных не было перегрузки от сотен частиц в секунду
+        if (distance > 12) { 
+            addSparkles(currentX, currentY, 6); // Строго по 6 звездочек
             lastTouchX = currentX;
             lastTouchY = currentY;
         }
