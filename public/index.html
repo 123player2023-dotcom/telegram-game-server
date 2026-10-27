@@ -2591,6 +2591,23 @@ function setAppAvatar(url) {
     };
     reader.readAsDataURL(file);
 }
+// Автозапуск музыки при загрузке страницы + страховка по первому тапу/клику
+    window.addEventListener('DOMContentLoaded', () => {
+        if (musicEnabled) {
+            startBackgroundMusic();
+        }
+    });
+
+    ['click', 'touchstart'].forEach(eventType => {
+        document.addEventListener(eventType, () => {
+            if (musicEnabled) {
+                const bgAudio = document.getElementById('bg-audio');
+                if (bgAudio && bgAudio.paused) {
+                    startBackgroundMusic();
+                }
+            }
+        }, { once: true });
+    });
 </script>
 </body>
 </html>
