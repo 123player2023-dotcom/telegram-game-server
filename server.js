@@ -321,6 +321,24 @@ app.post('/api/update-stars', async (req, res) => {
     }
 });
 
+app.post('/api/update-avatar', async (req, res) => {
+    try {
+        const { telegramId, avatarUrl } = req.body;
+        const tIdStr = String(telegramId);
+        let user = await UserModel.findOne({ telegramId: tIdStr });
+        if (user) {
+            user.avatarUrl = avatarUrl;
+            await user.save();
+            res.json({ success: true, avatarUrl: user.avatarUrl });
+        } else {
+            res.status(404).json({ error: 'User not found' });
+        }
+    } catch (e) {
+        console.error('Ошибка обновления аватара:', e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
 app.post('/api/update-inventory', async (req, res) => {
     try {
         const { telegramId, inventory } = req.body;
