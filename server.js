@@ -202,6 +202,7 @@ app.post('/api/login', async (req, res) => {
         let user = await UserModel.findOne({ telegramId: tIdStr });
         
         if (!user) {
+            // Если пользователя нет — создаем с аватаркой из ТГ (если она есть)
             user = new UserModel({ 
                 telegramId: tIdStr, 
                 username: username || 'Игрок', 
@@ -218,10 +219,14 @@ app.post('/api/login', async (req, res) => {
                 user.username = username;
                 isUpdated = true;
             }
-            if (avatarUrl && user.avatarUrl !== avatarUrl) {
+            
+            // ВАЖНО: Записываем аватарку из ТГ только если у юзера в базе пусто. 
+            // Если пользователь уже загрузил кастомную — она никогда не перезапишется!
+            if (!user.avatarUrl && avatarUrl) {
                 user.avatarUrl = avatarUrl;
                 isUpdated = true;
             }
+
             if (isUpdated) {
                 await user.save();
             }
