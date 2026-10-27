@@ -2471,6 +2471,24 @@
             showModal('❌', 'Ошибка сети', 'Не удалось связаться с сервером.', false, false);
         }
     }
+    // Универсальная функция для одновременного обновления аватара в шапке и профиле
+function setAppAvatar(url) {
+    const defaultFallback = '/default-avatar.jpg';
+    const finalUrl = url && url.trim() !== '' ? url : defaultFallback;
+
+    // 1. Обновляем аватарку в шапке (красный круг)
+    const headerAvatar = document.getElementById('header-user-avatar');
+    if (headerAvatar) {
+        headerAvatar.src = finalUrl;
+        headerAvatar.style.display = 'block';
+    }
+
+    // 2. Обновляем аватарку в профиле (основной круг)
+    const profileAvatar = document.getElementById('user-avatar');
+    if (profileAvatar) {
+        profileAvatar.src = finalUrl;
+    }
+}
     function uploadCustomAvatar(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -2478,17 +2496,18 @@
     const reader = new FileReader();
     reader.onload = function(e) {
         const base64Image = e.target.result;
-        // Устанавливаем аватарку на экране
-        document.getElementById('user-avatar').src = base64Image;
         
-        // Отправляем на сервер, чтобы сохранить в базе данных
+        // 1. Используем универсальную функцию (обновит и в шапке, и в профиле)
+        setAppAvatar(base64Image);
+
+        // 2. Отправляем на сервер (исправлено currentTelegramId на ваш переменный userId)
         fetch('/api/update-avatar', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ telegramId: currentTelegramId, avatarUrl: base64Image })
+            body: JSON.stringify({ telegramId: userId, avatarUrl: base64Image })
         }).then(res => res.json()).then(data => {
             if (data.success) {
-                console.log('Аватар успешно обновлен!');
+                console.log('Аватар успешно обновлен и сохранен в базе!');
             }
         });
     };
