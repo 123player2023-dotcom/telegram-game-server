@@ -72,7 +72,8 @@ bot.start(async (ctx) => {
 
 🎁  **Твой первый подарок уже ждет!** Нажми кнопку ниже, чтобы забрать стартовый бонус и сделать первый запуск!`;
 
-        await ctx.replyWithPhoto('https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=1000&auto=format&fit=crop', {
+        // Указываем прямую ссылку на вашу картинку из папки public
+        await ctx.replyWithPhoto('https://telegram-game-server.onrender.com/welcome.jpg', {
             caption: welcomeText,
             parse_mode: 'Markdown',
             reply_markup: {
