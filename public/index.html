@@ -1397,37 +1397,34 @@
 
     // Синхронизация данных с сервером (включая аватарку из Telegram)
     async function syncWithServer() {
-        try {
-            const response = await fetch(`/api/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    telegramId: userId, 
-                    username: username,
-                    avatarUrl: telegramUser?.photo_url || '' // <-- Передаем аватарку на сервер
-                })
-            });
-            const data = await response.json();
-            if (data && data.stars !== undefined) {
-                userStars = data.stars;
-                inventory = data.inventory || [];
-                lastFreeCaseTime = data.lastFreeCaseTime || 0;
-                
-                updateBalanceUI();
-                renderInventory();
-                checkFreeCooldownUI();
+    try {
+        const response = await fetch(`/api/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                telegramId: userId, 
+                username: username,
+                avatarUrl: telegramUser?.photo_url || '' 
+            })
+        });
+        const data = await response.json();
+        if (data && data.stars !== undefined) {
+            userStars = data.stars;
+            inventory = data.inventory || [];
+            lastFreeCaseTime = data.lastFreeCaseTime || 0;
+            
+            updateBalanceUI();
+            renderInventory();
+            checkFreeCooldownUI();
 
-                // Отображение аватарки в шапке
-                const avatarImg = document.getElementById('header-user-avatar');
-                if (avatarImg && data.avatarUrl) {
-                    avatarImg.src = data.avatarUrl;
-                    avatarImg.style.display = 'block';
-                }
-            }
-        } catch (e) {
-            console.warn('Ошибка синхронизации с сервером:', e);
+            // Применяем аватарку из базы (или ТГ / дефолтную, если в базе пусто)
+            const fallbackTg = telegramUser?.photo_url || '';
+            setAppAvatar(data.avatarUrl || fallbackTg);
         }
+    } catch (e) {
+        console.warn('Ошибка синхронизации с сервером:', e);
     }
+}
     
     let currentMode = 'paid';
     let isSpinning = false;
