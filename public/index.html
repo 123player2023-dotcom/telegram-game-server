@@ -1110,54 +1110,39 @@
     window.addEventListener('resize', resizeCanvas);
 
     class Sparkle {
-        constructor(x, y) {
-            this.x = x;
-            this.y = y;
-            // Делаем звездочки крупнее и заметнее
-            this.size = Math.random() * 14 + 6; 
-            this.speedX = (Math.random() - 0.5) * 12;
-            this.speedY = (Math.random() - 0.5) * 12;
-            this.life = 1;
-            this.decay = Math.random() * 0.02 + 0.008;
-            this.rotation = Math.random() * Math.PI;
-            this.rotSpeed = (Math.random() - 0.5) * 0.15;
-        }
-        update() {
-            this.x += this.speedX;
-            this.y += this.speedY;
-            this.life -= this.decay;
-            this.rotation += this.rotSpeed;
-        }
-        draw() {
-            ctx.save();
-            ctx.globalAlpha = Math.max(0, this.life);
-            ctx.translate(this.x, this.y);
-            ctx.rotate(this.rotation);
-            
-            // Оптимизированное свечение без лагов для мобильных устройств
-        ctx.fillStyle = '#fef3c7'; 
-        ctx.shadowBlur = 10; // Снизили с 30 до 10, чтобы телефон не грелся и не лагал
-        ctx.shadowColor = '#fbbf24';
-            
-            // Рисуем красивую сияющую четырехлучевую звезду
-            ctx.beginPath();
-            const spikes = 4;
-            const outerRadius = this.size * 1.6;
-            const innerRadius = this.size * 0.45;
-            for (let i = 0; i < spikes * 2; i++) {
-                const r = (i % 2 === 0) ? outerRadius : innerRadius;
-                const angle = (i * Math.PI) / spikes;
-                const x = Math.cos(angle) * r;
-                const y = Math.sin(angle) * r;
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            }
-            ctx.closePath();
-            ctx.fill();
-            
-            ctx.restore();
-        }
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.size = Math.random() * 8 + 4; // Аккуратный размер точки неона
+        this.speedX = (Math.random() - 0.5) * 3;
+        this.speedY = (Math.random() - 0.5) * 3;
+        this.life = 1; // Время жизни
+        this.decay = Math.random() * 0.04 + 0.02; // Быстрое, но плавное затухание
     }
+
+    update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.life -= this.decay;
+    }
+
+    draw() {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, this.life);
+        
+        // Мягкое неоновое золотое свечение (оптимизировано для мобильных)
+        ctx.fillStyle = '#fef3c7';
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = '#fbbf24';
+
+        // Рисуем гладкую светящуюся неоновую точку вместо тяжелых лучей
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size * 0.6, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+    }
+}
 
     function addSparkles(x, y, count = 4) {
         for (let i = 0; i < count; i++) {
