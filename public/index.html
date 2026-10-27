@@ -294,10 +294,12 @@
         .floating-icon {
             position: absolute;
             bottom: -50px;
-            font-size: 22px;
-            opacity: 0.65;
+            font-size: 26px;
+            opacity: 1; /* Убираем полупрозрачность — иконки максимально яркие */
             animation: floatUp 8s linear infinite;
-            filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.9));
+            /* Мощное двойное свечение: яркое золотисто-желтое + неоновое */
+            filter: drop-shadow(0 0 25px rgba(251, 191, 36, 1)) drop-shadow(0 0 12px rgba(236, 72, 153, 1));
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.9);
         }
         @keyframes floatUp {
             0% { transform: translateY(0) rotate(0deg) scale(0.8); opacity: 0; }
