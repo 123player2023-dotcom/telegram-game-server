@@ -2470,6 +2470,29 @@
             showModal('❌', 'Ошибка сети', 'Не удалось связаться с сервером.', false, false);
         }
     }
+    function uploadCustomAvatar(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const base64Image = e.target.result;
+        // Устанавливаем аватарку на экране
+        document.getElementById('user-avatar').src = base64Image;
+        
+        // Отправляем на сервер, чтобы сохранить в базе данных
+        fetch('/api/update-avatar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ telegramId: currentTelegramId, avatarUrl: base64Image })
+        }).then(res => res.json()).then(data => {
+            if (data.success) {
+                console.log('Аватар успешно обновлен!');
+            }
+        });
+    };
+    reader.readAsDataURL(file);
+}
 </script>
 </body>
 </html>
