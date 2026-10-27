@@ -1069,39 +1069,48 @@
         constructor(x, y) {
             this.x = x;
             this.y = y;
-            this.size = Math.random() * 9 + 2;
-            this.speedX = (Math.random() - 0.5) * 8;
-            this.speedY = (Math.random() - 0.5) * 8;
-            this.color = `hsl(${Math.random() * 80 + 260}, 100%, 80%)`;
+            // Делаем звездочки крупнее и заметнее
+            this.size = Math.random() * 14 + 6; 
+            this.speedX = (Math.random() - 0.5) * 12;
+            this.speedY = (Math.random() - 0.5) * 12;
             this.life = 1;
-            this.decay = Math.random() * 0.02 + 0.007;
-            this.isGlint = Math.random() > 0.25;
+            this.decay = Math.random() * 0.02 + 0.008;
+            this.rotation = Math.random() * Math.PI;
+            this.rotSpeed = (Math.random() - 0.5) * 0.15;
         }
         update() {
             this.x += this.speedX;
             this.y += this.speedY;
             this.life -= this.decay;
+            this.rotation += this.rotSpeed;
         }
         draw() {
             ctx.save();
             ctx.globalAlpha = Math.max(0, this.life);
-            ctx.fillStyle = this.color;
-            ctx.shadowBlur = 30;
-            ctx.shadowColor = this.color;
+            ctx.translate(this.x, this.y);
+            ctx.rotate(this.rotation);
             
-            if (this.isGlint) {
-                ctx.beginPath();
-                ctx.moveTo(this.x, this.y - this.size * 2.2);
-                ctx.lineTo(this.x + this.size * 2.2, this.y);
-                ctx.lineTo(this.x, this.y + this.size * 2.2);
-                ctx.lineTo(this.x - this.size * 2.2, this.y);
-                ctx.closePath();
-                ctx.fill();
-            } else {
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fill();
+            // Насыщенное золотое свечение, как на эталонной текстуре
+            ctx.fillStyle = '#fef3c7'; // яркий сияющий центр
+            ctx.shadowBlur = 30;
+            ctx.shadowColor = '#fbbf24'; // золотой ореол
+            
+            // Рисуем красивую сияющую четырехлучевую звезду
+            ctx.beginPath();
+            const spikes = 4;
+            const outerRadius = this.size * 1.6;
+            const innerRadius = this.size * 0.45;
+            for (let i = 0; i < spikes * 2; i++) {
+                const r = (i % 2 === 0) ? outerRadius : innerRadius;
+                const angle = (i * Math.PI) / spikes;
+                const x = Math.cos(angle) * r;
+                const y = Math.sin(angle) * r;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
             }
+            ctx.closePath();
+            ctx.fill();
+            
             ctx.restore();
         }
     }
@@ -1112,11 +1121,11 @@
         }
     }
 
-    window.addEventListener('mousemove', (e) => addSparkles(e.clientX, e.clientY, 3));
+    window.addEventListener('mousemove', (e) => addSparkles(e.clientX, e.clientY, 6));
     window.addEventListener('touchmove', (e) => {
-        if (e.touches[0]) addSparkles(e.touches[0].clientX, e.touches[0].clientY, 7);
+        if (e.touches[0]) addSparkles(e.touches[0].clientX, e.touches[0].clientY, 14); // Плотный и яркий шлейф при свайпе пальцем
     });
-    window.addEventListener('click', (e) => addSparkles(e.clientX, e.clientY, 25));
+    window.addEventListener('click', (e) => addSparkles(e.clientX, e.clientY, 35));
 
     function animateSparkles() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
