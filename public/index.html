@@ -2374,34 +2374,36 @@ window.addEventListener('click', (e) => {
     let globalModalCloseCallback = null;
 
     function showModal(icon, title, desc, isNothing = false, isWin = false, subDesc = '', onCloseCallback = null) {
-        document.getElementById('modal-icon').innerText = icon;
-        document.getElementById('modal-title').innerText = title;
-        document.getElementById('modal-desc').innerText = desc;
-        globalModalCloseCallback = onCloseCallback;
+    document.getElementById('modal-icon').innerText = icon;
+    document.getElementById('modal-title').innerText = title;
+    
+    // ВНИМАНИЕ: Заменили innerText на innerHTML, чтобы отображались КНОПКИ, а не код!
+    document.getElementById('modal-desc').innerHTML = desc;
+    
+    globalModalCloseCallback = onCloseCallback;
 
-        const subDescEl = document.getElementById('modal-sub-desc');
-        if (subDesc) {
-            subDescEl.innerText = subDesc;
-            subDescEl.style.display = 'block';
-        } else {
-            subDescEl.style.display = 'none';
-        }
-
-        const actionBtn = document.getElementById('modal-action-btn');
-        if (isNothing) {
-            actionBtn.innerText = 'Крутить еще раз';
-            actionBtn.onclick = () => { closeModal(); startSpin(); };
-        } else if (isWin) {
-            actionBtn.innerText = 'Ура!';
-            actionBtn.onclick = closeModal;
-        } else {
-            actionBtn.innerText = 'Закрыть';
-            actionBtn.onclick = closeModal;
-        }
-
-        document.getElementById('result-modal').style.display = 'flex';
+    const subDescEl = document.getElementById('modal-sub-desc');
+    if (subDesc) {
+        subDescEl.innerText = subDesc;
+        subDescEl.style.display = 'block';
+    } else {
+        subDescEl.style.display = 'none';
     }
 
+    const actionBtn = document.getElementById('modal-action-btn');
+    if (isNothing) {
+        actionBtn.innerText = 'Крутить еще раз';
+        actionBtn.onclick = () => { closeModal(); startSpin(); };
+    } else if (isWin) {
+        actionBtn.innerText = 'Ура!';
+        actionBtn.onclick = closeModal;
+    } else {
+        actionBtn.innerText = 'Закрыть';
+        actionBtn.onclick = closeModal;
+    }
+
+    document.getElementById('result-modal').style.display = 'flex';
+}
     function closeModal() {
         playClickSound();
         document.getElementById('result-modal').style.display = 'none';
