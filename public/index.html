@@ -703,51 +703,65 @@
             <img id="header-user-avatar" src="" alt="Avatar" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; display: block; border: 1px solid var(--accent-color);">
             <span id="header-username">🎁 Игрок</span>
         </div>
-        <div class="balance-container">
-            <div class="balance-box">⭐ <span id="user-stars">0</span></div>
-            <button class="add-stars-btn" onclick="openDepositModal()">+</button>
-        </div>
+        <div class="balance-container" style="gap: 5px;">
+    <div class="balance-box" title="Скрап-металл">⚙️ <span id="user-scrap">0</span></div>
+    <div class="balance-box" style="color: #38bdf8;" title="Энергия">⚡ <span id="user-energy">100</span></div>
+    <div class="balance-box">⭐ <span id="user-stars">0</span></div>
+    <button class="add-stars-btn" onclick="openDepositModal()">+</button>
+</div>
     </div>
 
     <div class="content">
         <div class="screen active" id="screen-main">
             <div class="modes-menu-container">
-                <div style="font-size: 18px; font-weight: 800; color: var(--accent-color); margin-bottom: 4px; text-align: center;">🎮 Выберите игровой режим</div>
-                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; text-align: center;">Открывайте кейсы, сражайтесь в дуэлях или улучшайте предметы!</p>
-                
-                <div class="mode-card-btn" onclick="openModeScreen('cases')">
-                    <div class="mode-card-left">
-                        <div class="mode-icon-box">🎁</div>
-                        <div class="mode-info">
-                            <div class="mode-title">Кейсы с подарками</div>
-                            <div class="mode-desc">FREE, 25⭐, 50⭐ и 100⭐ кейсы</div>
-                        </div>
-                    </div>
-                    <div class="mode-arrow">➔</div>
-                </div>
-
-                <div class="mode-card-btn" onclick="openModeScreen('duel')">
-                    <div class="mode-card-left">
-                        <div class="mode-icon-box">⚔️</div>
-                        <div class="mode-info">
-                            <div class="mode-title">PvP Дуэль</div>
-                            <div class="mode-desc">Сражения против реальных игроков 2X</div>
-                        </div>
-                    </div>
-                    <div class="mode-arrow">➔</div>
-                </div>
-
-                <div class="mode-card-btn" onclick="openModeScreen('upgrade')">
-                    <div class="mode-card-left">
-                        <div class="mode-icon-box">📈</div>
-                        <div class="mode-info">
-                            <div class="mode-title">Апгрейд предметов</div>
-                            <div class="mode-desc">Улучшайте призы до желаемого подарка</div>
-                        </div>
-                    </div>
-                    <div class="mode-arrow">➔</div>
-                </div>
+    <div style="font-size: 18px; font-weight: 800; color: var(--accent-color); margin-bottom: 4px; text-align: center;">🎮 Выберите игровой режим</div>
+    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; text-align: center;">Открывайте кейсы, сражайтесь в дуэлях или улучшайте предметы!</p>
+    
+    <div class="mode-card-btn" onclick="openModeScreen('cases')">
+        <div class="mode-card-left">
+            <div class="mode-icon-box">🎁</div>
+            <div class="mode-info">
+                <div class="mode-title">Кейсы с подарками</div>
+                <div class="mode-desc">FREE, 25⭐, 50⭐ и 100⭐ кейсы</div>
             </div>
+        </div>
+        <div class="mode-arrow">➔</div>
+    </div>
+
+    <div class="mode-card-btn" onclick="openModeScreen('duel')">
+        <div class="mode-card-left">
+            <div class="mode-icon-box">⚔️</div>
+            <div class="mode-info">
+                <div class="mode-title">PvP Дуэль</div>
+                <div class="mode-desc">Сражения против реальных игроков 2X</div>
+            </div>
+        </div>
+        <div class="mode-arrow">➔</div>
+    </div>
+
+    <div class="mode-card-btn" onclick="openModeScreen('upgrade')">
+        <div class="mode-card-left">
+            <div class="mode-icon-box">📈</div>
+            <div class="mode-info">
+                <div class="mode-title">Апгрейд предметов</div>
+                <div class="mode-desc">Улучшайте призы до желаемого подарка</div>
+            </div>
+        </div>
+        <div class="mode-arrow">➔</div>
+    </div>
+
+    <!-- Карточка Гаража -->
+    <div class="mode-card-btn" onclick="openModeScreen('garage')">
+        <div class="mode-card-left">
+            <div class="mode-icon-box">🛸</div>
+            <div class="mode-info">
+                <div class="mode-title">Гараж корабля</div>
+                <div class="mode-desc">Ремонт и 10 уровней эволюции</div>
+            </div>
+        </div>
+        <div class="mode-arrow">➔</div>
+    </div>
+</div>
         </div>
 
         <div class="screen" id="screen-cases">
