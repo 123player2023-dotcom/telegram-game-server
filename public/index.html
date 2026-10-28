@@ -1650,20 +1650,28 @@ window.addEventListener('click', (e) => {
     }
 
     function openModeScreen(modeKey) {
-        playClickSound();
-        document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
-        
-        if (modeKey === 'cases') {
-            document.getElementById('screen-cases').classList.add('active');
-            switchRouletteMode('paid');
-        } else if (modeKey === 'duel') {
-            document.getElementById('screen-duel').classList.add('active');
-            resetDuelInterfaceToDefault();
-        } else if (modeKey === 'upgrade') {
-            document.getElementById('screen-upgrade').classList.add('active');
-            updateUpgradeChance();
+    playClickSound();
+    document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+    
+    if (modeKey === 'cases') {
+        document.getElementById('screen-cases').classList.add('active');
+        switchRouletteMode('paid');
+    } else if (modeKey === 'duel') {
+        document.getElementById('screen-duel').classList.add('active');
+        resetDuelInterfaceToDefault();
+    } else if (modeKey === 'upgrade') {
+        document.getElementById('screen-upgrade').classList.add('active');
+        updateUpgradeChance();
+    } else if (modeKey === 'garage') {
+        const garageScreen = document.getElementById('screen-garage');
+        if (garageScreen) {
+            garageScreen.classList.add('active');
+            garageScreen.style.display = 'flex';
+            renderGarageShip();
+            updateGarageCurrencyUI();
         }
     }
+}
 
     function backToMainScreen() {
         playClickSound();
