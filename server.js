@@ -33,11 +33,16 @@ const MONGO_URI = process.env.MONGO_URI;
 let UserSchema = new mongoose.Schema({
     telegramId: { type: String, unique: true, required: true },
     username: String,
-    avatarUrl: { type: String, default: '' }, // Аватарка из Telegram
+    avatarUrl: { type: String, default: '' },
     stars: { type: Number, default: 0 },
     inventory: { type: Array, default: [] },
     lastFreeCaseTime: { type: Number, default: 0 },
-    paidCaseCount: { type: Number, default: 0 }
+    paidCaseCount: { type: Number, default: 0 },
+    // Новые поля для режима "Гараж"
+    scrapMetal: { type: Number, default: 0 },
+    energy: { type: Number, default: 100 },
+    garageLevel: { type: Number, default: 1 },
+    lastEnergyReset: { type: Number, default: 0 }
 });
 let UserModel = mongoose.model('User', UserSchema);
 
@@ -231,7 +236,69 @@ app.post('/api/login', async (req, res) => {
                 await user.save();
             }
         }
+        app.post('/api/login', async (req, res) => {
+    try {
+        const { telegramId, username, avatarUrl } = req.body;
+        if (!telegramId) return res.status(400).json({ error: 'No telegramId' });
+
+        const tIdStr = String(telegramId);
+        let user = await UserModel.findOne({ telegramId: tIdStr });
         
+        if (!user) {
+            user = new UserModel({ 
+                telegramId: tIdStr, 
+                username: username || 'Игрок', 
+                avatarUrl: avatarUrl || '', 
+                stars: 0, 
+                inventory: [], 
+                lastFreeCaseTime: 0, 
+                paidCaseCount: 0 
+            });
+            await user.save();
+        } else {
+            let isUpdated = false;
+            if (username && user.username !== username) {
+                user.username = username;
+                isUpdated = true;
+            }
+            if (!user.avatarUrl && avatarUrl) {
+                user.avatarUrl = avatarUrl;
+                isUpdated = true;
+            }
+            if (isUpdated) {
+                await user.save();
+            }
+        }
+        
+        // --- ВОТ ЭТОТ НОВЫЙ КУСОК ПРО ЕЖЕДНЕВНУЮ ЭНЕРГИЮ ВСТАВЛЯЕМ СЮДА ---
+        const now = Date.now();
+        const dayMs = 24 * 60 * 60 * 1000;
+        if (!user.lastEnergyReset) {
+            user.lastEnergyReset = now;
+            await user.save();
+        } else if (now - user.lastEnergyReset >= dayMs) {
+            if (user.energy < 100) {
+                user.energy = 100;
+            }
+            user.lastEnergyReset = now;
+            await user.save();
+        }
+        // -------------------------------------------------------------
+
+        res.json({ 
+            stars: user.stars, 
+            inventory: user.inventory, 
+            lastFreeCaseTime: user.lastFreeCaseTime,
+            avatarUrl: user.avatarUrl,
+            // --- И ДОБАВЛЯЕМ ЭТИ ТРИ ПОЛЯ В ОТПРАВКУ КЛИЕНТУ ---
+            scrapMetal: user.scrapMetal,
+            energy: user.energy,
+            garageLevel: user.garageLevel
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
         res.json({ 
             stars: user.stars, 
             inventory: user.inventory, 
