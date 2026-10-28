@@ -2631,6 +2631,11 @@ function setAppAvatar(url) {
             }
         }, { once: true });
     });
+    // Функция открытия окна покупки/пополнения энергии
+function openEnergyShopModal() {
+    playClickSound();
+    showModal('⚡', 'Энергия', 'Здесь вы можете восстановить или купить энергию для улучшения корабля!', false, false);
+}
 </script>
 </body>
 </html>
