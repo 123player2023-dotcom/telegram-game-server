@@ -2755,6 +2755,25 @@ function renderGarageShip() {
     if (imgEl) imgEl.src = `ЛВЛ${garageLevel}.jpg`;
     if (titleEl) titleEl.innerText = `Корабль: Уровень ${garageLevel}`;
 }
+    function openExchangeModal() {
+    playClickSound();
+    showModal('⭐', 'Обменник скрапа', 'Обменять 1000 ⚙️ на 1 ⭐?', true, function() {
+        if (scrapMetal >= 1000) {
+            scrapMetal -= 1000;
+            userStars += 1;
+            updateUserBalances();
+            updateGarageCurrencyUI();
+            showNotification('Успешный обмен! +1 ⭐');
+        } else {
+            showNotification('Нужно минимум 1000 ⚙️ скрапа!');
+        }
+    });
+
+    setTimeout(() => {
+        const modalConfirmBtn = document.querySelector('.modal-confirm-btn, #modal-action-btn');
+        if (modalConfirmBtn) modalConfirmBtn.innerText = 'Обменять';
+    }, 50);
+}
 </script>
 </body>
 </html>
