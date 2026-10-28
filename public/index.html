@@ -712,59 +712,81 @@
     </div>
 
     <div class="content">
-        <div class="screen active" id="screen-main">
-            <div class="modes-menu-container">
-    <div style="font-size: 18px; font-weight: 800; color: var(--accent-color); margin-bottom: 4px; text-align: center;">🎮 Выберите игровой режим</div>
-    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; text-align: center;">Открывайте кейсы, сражайтесь в дуэлях или улучшайте предметы!</p>
-    
-    <div class="mode-card-btn" onclick="openModeScreen('cases')">
-        <div class="mode-card-left">
-            <div class="mode-icon-box">🎁</div>
-            <div class="mode-info">
-                <div class="mode-title">Кейсы с подарками</div>
-                <div class="mode-desc">FREE, 25⭐, 50⭐ и 100⭐ кейсы</div>
+    <!-- 1. Главный экран с меню режимов -->
+    <div class="screen active" id="screen-main">
+        <div class="modes-menu-container">
+            <div style="font-size: 18px; font-weight: 800; color: var(--accent-color); margin-bottom: 4px; text-align: center;">🎮 Выберите игровой режим</div>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; text-align: center;">Открывайте кейсы, сражайтесь в дуэлях или улучшайте предметы!</p>
+            
+            <div class="mode-card-btn" onclick="openModeScreen('cases')">
+                <div class="mode-card-left">
+                    <div class="mode-icon-box">🎁</div>
+                    <div class="mode-info">
+                        <div class="mode-title">Кейсы с подарками</div>
+                        <div class="mode-desc">FREE, 25⭐, 50⭐ и 100⭐ кейсы</div>
+                    </div>
+                </div>
+                <div class="mode-arrow">➔</div>
+            </div>
+
+            <div class="mode-card-btn" onclick="openModeScreen('duel')">
+                <div class="mode-card-left">
+                    <div class="mode-icon-box">⚔️</div>
+                    <div class="mode-info">
+                        <div class="mode-title">PvP Дуэль</div>
+                        <div class="mode-desc">Сражения против реальных игроков 2X</div>
+                    </div>
+                </div>
+                <div class="mode-arrow">➔</div>
+            </div>
+
+            <div class="mode-card-btn" onclick="openModeScreen('upgrade')">
+                <div class="mode-card-left">
+                    <div class="mode-icon-box">📈</div>
+                    <div class="mode-info">
+                        <div class="mode-title">Апгрейд предметов</div>
+                        <div class="mode-desc">Улучшайте призы до желаемого подарка</div>
+                    </div>
+                </div>
+                <div class="mode-arrow">➔</div>
+            </div>
+
+            <!-- Карточка Гаража -->
+            <div class="mode-card-btn" onclick="openModeScreen('garage')">
+                <div class="mode-card-left">
+                    <div class="mode-icon-box">🛸</div>
+                    <div class="mode-info">
+                        <div class="mode-title">Гараж корабля</div>
+                        <div class="mode-desc">Ремонт и 10 уровней эволюции</div>
+                    </div>
+                </div>
+                <div class="mode-arrow">➔</div>
             </div>
         </div>
-        <div class="mode-arrow">➔</div>
     </div>
 
-    <div class="mode-card-btn" onclick="openModeScreen('duel')">
-        <div class="mode-card-left">
-            <div class="mode-icon-box">⚔️</div>
-            <div class="mode-info">
-                <div class="mode-title">PvP Дуэль</div>
-                <div class="mode-desc">Сражения против реальных игроков 2X</div>
+    <!-- 2. ЭКРАН ГАРАЖА -->
+    <div class="screen" id="screen-garage">
+        <div class="back-to-menu-row" style="justify-content: space-between; align-items: center;">
+            <button class="back-circle-btn" onclick="backToMainScreen()">←</button>
+            <button class="back-circle-btn" onclick="openExchangeModal()" title="Обменник" style="width: auto; padding: 0 10px; font-size: 13px;">⚙️ ➔ ⭐</button>
+        </div>
+
+        <div class="case-card" style="position: relative; padding: 12px; display: flex; flex-direction: column; align-items: center;">
+            <div style="font-size: 14px; font-weight: 800; color: var(--accent-color);" id="garage-ship-title">Корабль: Уровень 1</div>
+            
+            <div style="position: relative; width: 100%; max-width: 280px; height: 360px; margin: 10px 0; border-radius: 16px; overflow: hidden; border: 1px solid var(--border-color); background: #000;" onclick="onGarageShipClick(event)">
+                <img id="garage-ship-img" src="ЛВЛ1.jpg" style="width: 100%; height: 100%; object-fit: cover;">
+                <button id="garage-repair-btn" onclick="openUpgradeModal(event)" style="position: absolute; top: 15px; right: 15px; background: var(--accent-gradient); border: none; color: #fff; border-radius: 50%; width: 44px; height: 44px; font-size: 20px; box-shadow: 0 0 15px rgba(168, 85, 247, 0.8); cursor: pointer; animation: pulseGlow 2s infinite;">🛠️</button>
             </div>
+
+            <div style="font-size: 11px; color: var(--text-muted);">Тапайте по кораблю для сбора частичек!</div>
         </div>
-        <div class="mode-arrow">➔</div>
     </div>
 
-    <div class="mode-card-btn" onclick="openModeScreen('upgrade')">
-        <div class="mode-card-left">
-            <div class="mode-icon-box">📈</div>
-            <div class="mode-info">
-                <div class="mode-title">Апгрейд предметов</div>
-                <div class="mode-desc">Улучшайте призы до желаемого подарка</div>
-            </div>
-        </div>
-        <div class="mode-arrow">➔</div>
-    </div>
-
-    <!-- Карточка Гаража -->
-    <div class="mode-card-btn" onclick="openModeScreen('garage')">
-        <div class="mode-card-left">
-            <div class="mode-icon-box">🛸</div>
-            <div class="mode-info">
-                <div class="mode-title">Гараж корабля</div>
-                <div class="mode-desc">Ремонт и 10 уровней эволюции</div>
-            </div>
-        </div>
-        <div class="mode-arrow">➔</div>
-    </div>
-</div>
-        </div>
-
-        <div class="screen" id="screen-cases">
+    <!-- 3. Следующие экраны (кейсы и т.д.) -->
+    <div class="screen" id="screen-cases">
+        <!-- ваш остальной код кейсов -->
             <div class="back-to-menu-row">
                 <button class="back-circle-btn" onclick="backToMainScreen()">←</button>
             </div>
