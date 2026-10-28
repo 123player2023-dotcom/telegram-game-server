@@ -2631,10 +2631,20 @@ function setAppAvatar(url) {
             }
         }, { once: true });
     });
-    // Функция открытия окна покупки/пополнения энергии
-function openEnergyShopModal() {
+    function openEnergyShopModal() {
     playClickSound();
-    showModal('⚡', 'Энергия', 'Здесь вы можете восстановить или купить энергию для улучшения корабля!', false, false);
+    // Открываем модалку покупки энергии (например, 50 энергии за 10 звезд или по вашему балансу)
+    showModal('⚡', 'Покупка энергии', 'Пополнить 100 энергии за 10 ⭐?', true, function() {
+        // Логика покупки
+        if (userStars >= 10) {
+            userStars -= 10;
+            energy += 100;
+            updateUserBalances();
+            showNotification('Энергия успешно пополнена!');
+        } else {
+            showNotification('Недостаточно звезд!');
+        }
+    });
 }
 </script>
 </body>
