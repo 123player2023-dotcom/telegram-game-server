@@ -2635,20 +2635,76 @@ function setAppAvatar(url) {
             }
         }, { once: true });
     });
-    function openEnergyShopModal() {
+    // Функция открытия полноценного магазина энергии с выбором вариантов
+function openEnergyShopModal() {
     playClickSound();
-    // Открываем модалку покупки энергии (например, 50 энергии за 10 звезд или по вашему балансу)
-    showModal('⚡', 'Покупка энергии', 'Пополнить 100 энергии за 10 ⭐?', true, function() {
-        // Логика покупки
-        if (userStars >= 10) {
-            userStars -= 10;
-            energy += 100;
-            updateUserBalances();
-            showNotification('Энергия успешно пополнена!');
-        } else {
-            showNotification('Недостаточно звезд!');
-        }
-    });
+    
+    // Формируем красивый HTML-список вариантов покупки энергии
+    const energyOptionsHTML = `
+        <div style="display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; text-align: left; padding: 5px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 10px;">
+                <span>⚡ 10 энергии</span>
+                <button onclick="buyEnergyPackage(10, 1)" style="background: var(--accent-gradient); border: none; color: #fff; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">1 ⭐</button>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 10px;">
+                <span>⚡ 20 энергии</span>
+                <button onclick="buyEnergyPackage(20, 2)" style="background: var(--accent-gradient); border: none; color: #fff; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">2 ⭐</button>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 10px;">
+                <span>⚡ 30 энергии</span>
+                <button onclick="buyEnergyPackage(30, 3)" style="background: var(--accent-gradient); border: none; color: #fff; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">3 ⭐</button>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 10px;">
+                <span>⚡ 40 энергии</span>
+                <button onclick="buyEnergyPackage(40, 4)" style="background: var(--accent-gradient); border: none; color: #fff; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">4 ⭐</button>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 10px;">
+                <span>⚡ 50 энергии</span>
+                <button onclick="buyEnergyPackage(50, 5)" style="background: var(--accent-gradient); border: none; color: #fff; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">5 ⭐</button>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 10px;">
+                <span>⚡ 60 энергии</span>
+                <button onclick="buyEnergyPackage(60, 6)" style="background: var(--accent-gradient); border: none; color: #fff; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">6 ⭐</button>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 10px;">
+                <span>⚡ 70 энергии</span>
+                <button onclick="buyEnergyPackage(70, 7)" style="background: var(--accent-gradient); border: none; color: #fff; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">7 ⭐</button>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 10px;">
+                <span>⚡ 80 энергии</span>
+                <button onclick="buyEnergyPackage(80, 8)" style="background: var(--accent-gradient); border: none; color: #fff; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">8 ⭐</button>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 10px;">
+                <span>⚡ 90 энергии</span>
+                <button onclick="buyEnergyPackage(90, 9)" style="background: var(--accent-gradient); border: none; color: #fff; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">9 ⭐</button>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.1); border: 1px solid var(--accent-color); padding: 8px 12px; border-radius: 10px;">
+                <span style="font-weight: bold;">⚡ 100 (Полное вост.)</span>
+                <button onclick="buyEnergyPackage(100, 10)" style="background: var(--accent-gradient); border: none; color: #fff; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">10 ⭐</button>
+            </div>
+        </div>
+    `;
+
+    // Вызываем модальное окно (передаем кастомный HTML внутрь)
+    showModal('⚡', 'Покупка энергии', energyOptionsHTML, false, false);
+}
+
+// Функция обработки покупки конкретного пакета энергии
+function buyEnergyPackage(energyAmount, costInStars) {
+    playClickSound();
+    if (userStars >= costInStars) {
+        userStars -= costInStars;
+        energy += energyAmount;
+        updateUserBalances();
+        updateGarageCurrencyUI();
+        showNotification(`Успешно куплено: +${energyAmount} ⚡!`);
+        
+        // Закрываем модальное окно после покупки
+        const modalEl = document.getElementById('modal-overlay'); // или ваш класс модалки
+        if (modalEl) modalEl.style.display = 'none';
+    } else {
+        showNotification('Недостаточно звезд!');
+    }
 }
     let scrapMetal = 0;
 let energy = 100;
