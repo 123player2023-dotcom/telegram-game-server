@@ -2828,6 +2828,111 @@ function updateUserBalances() {
     updateBalanceUI(); // Обновляет звезды в шапке
     updateGarageCurrencyUI(); // Обновляет энергию и скрап в гараже
 }
+    // Функция открытия окна информации и стоимости улучшения корабля
+function openGarageUpgradeInfo() {
+    playClickSound();
+    
+    // Полная таблица уровней и стоимости из вашего ТЗ
+    const levelsInfo = [
+        { lvl: 2, scrap: 200, energy: 10, costStr: '200 ⚙️ + 10 ⚡' },
+        { lvl: 3, scrap: 400, energy: 20, costStr: '400 ⚙️ + 20 ⚡' },
+        { lvl: 4, scrap: 500, energy: 30, costStr: '500 ⚙️ + 30 ⚡' },
+        { lvl: 5, scrap: 600, energy: 50, costStr: '600 ⚙️ + 50 ⚡' },
+        { lvl: 6, scrap: 700, energy: 60, costStr: '700 ⚙️ + 60 ⚡' },
+        { lvl: 7, scrap: 800, energy: 70, costStr: '800 ⚙️ + 70 ⚡' },
+        { 
+            lvl: 8, scrap: 1000, energy: 80, starsCost: 50, 
+            costStr: '1000 ⚙️ + 80 ⚡ ИЛИ 50 ⭐', 
+            note: '⚡ При оплате звездами энергия НЕ тратится!' 
+        },
+        { 
+            lvl: 9, scrap: 1500, energy: 90, starsCost: 100, 
+            costStr: '1500 ⚙️ + 90 ⚡ ИЛИ 100 ⭐', 
+            note: '⚡ При оплате звездами энергия НЕ тратится!' 
+        },
+        { 
+            lvl: 10, scrap: 2000, energy: 100, starsCost: 250, 
+            costStr: '2000 ⚙️ + 100 ⚡ ИЛИ 250 ⭐', 
+            note: '⚡ При оплате звездами энергия НЕ тратится!' 
+        }
+    ];
+
+    let nextLvlData = levelsInfo.find(l => l.lvl === garageLevel + 1);
+    
+    let contentHTML = '';
+    if (!nextLvlData) {
+        contentHTML = `<div style="font-size: 14px; color: #38bdf8; font-weight: bold; padding: 10px;">Корабль прокачан до максимального 10 уровня! 🚀</div>`;
+    } else {
+        let buttonsHTML = '';
+        
+        // Если это высокие уровни (8, 9, 10), даем выбор оплаты (ресурсы или звезды)
+        if (nextLvlData.starsCost) {
+            buttonsHTML = `
+                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+                    <button class="btn" onclick="upgradeGarageShip(${nextLvlData.lvl}, 'resources')" style="background: var(--accent-gradient); margin-top:0;">Оплатить: ${nextLvlData.scrap} ⚙️ + ${nextLvlData.energy} ⚡</button>
+                    <button class="btn" onclick="upgradeGarageShip(${nextLvlData.lvl}, 'stars')" style="background: linear-gradient(135deg, #f59e0b, #d97706); margin-top:0;">Оплатить: ${nextLvlData.starsCost} ⭐ (Без потери ⚡)</button>
+                </div>
+            `;
+        } else {
+            buttonsHTML = `
+                <button class="btn" onclick="upgradeGarageShip(${nextLvlData.lvl}, 'resources')" style="background: var(--accent-gradient); margin-top: 10px;">Улучшить за ${nextLvlData.costStr}</button>
+            `;
+        }
+
+        contentHTML = `
+            <div style="font-size: 13px; text-align: left; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; margin-bottom: 6px;">
+                <div style="margin-bottom: 6px; font-weight: bold; color: var(--accent-color);">Эволюция до Уровня ${nextLvlData.lvl}:</div>
+                <div style="margin-bottom: 4px;">Требуется: <b>${nextLvlData.costStr}</b></div>
+                ${nextLvlData.note ? `<div style="font-size: 11px; color: #fbbf24; margin-top: 4px;">${nextLvlData.note}</div>` : ''}
+            </div>
+            ${buttonsHTML}
+        `;
+    }
+
+    showModal('🛸', `Гараж: Уровень ${garageLevel}`, contentHTML, false, false);
+}
+
+// Функция непосредственного апгрейда с проверкой и списанием валюты
+function upgradeGarageShip(targetLvl, payType) {
+    playClickSound();
+    
+    const costs = {
+        2: { scrap: 200, energy: 10 },
+        3: { scrap: 400, energy: 20 },
+        4: { scrap: 500, energy: 30 },
+        5: { scrap: 600, energy: 50 },
+        6: { scrap: 700, energy: 60 },
+        7: { scrap: 800, energy: 70 },
+        8: { scrap: 1000, energy: 80, stars: 50 },
+        9: { scrap: 1500, energy: 90, stars: 100 },
+        10: { scrap: 2000, energy: 100, stars: 250 }
+    };
+
+    let req = costs[targetLvl];
+    if (!req) return;
+
+    if (payType === 'stars') {
+        if (userStars < req.stars) {
+            showNotification('Недостаточно звезд на балансе!');
+            return;
+        }
+        userStars -= req.stars;
+        // Энергия не списывается при оплате звездами
+    } else {
+        if (scrapMetal < req.scrap || energy < req.energy) {
+            showNotification(`Не хватает ресурсов! Нужно: ${req.scrap} ⚙️ и ${req.energy} ⚡`);
+            return;
+        }
+        scrapMetal -= req.scrap;
+        energy -= req.energy;
+    }
+
+    garageLevel = targetLvl;
+    updateUserBalances();
+    renderGarageShip();
+    closeModal();
+    showNotification(`Корабль успешно улучшен до ${garageLevel} уровня! 🎉`);
+}
 </script>
 </body>
 </html>
