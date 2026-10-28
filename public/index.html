@@ -2500,17 +2500,30 @@ window.addEventListener('click', (e) => {
     }
 
     function switchScreen(screenName, btnEl) {
-        playClickSound();
-        document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-        document.getElementById('screen-' + screenName).classList.add('active');
-        btnEl.classList.add('active');
-        if (screenName === 'inventory') {
-            document.getElementById('inventory-badge').classList.remove('active');
-            renderInventory();
+    playClickSound();
+    document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+    
+    // Исправление: если пришли на гараж, включаем screen-garage
+    const targetScreenId = screenName === 'garage' ? 'screen-garage' : ('screen-' + screenName);
+    const targetScreen = document.getElementById(targetScreenId);
+    if (targetScreen) {
+        targetScreen.classList.add('active');
+        // Принудительно задаем display: flex для экрана гаража
+        if (screenName === 'garage') {
+            targetScreen.style.display = 'flex';
+            renderGarageShip();
+            updateGarageCurrencyUI();
         }
-        if (screenName === 'referral') renderReferralStats();
     }
+    
+    btnEl.classList.add('active');
+    if (screenName === 'inventory') {
+        document.getElementById('inventory-badge').classList.remove('active');
+        renderInventory();
+    }
+    if (screenName === 'referral') renderReferralStats();
+}
 
     function saveProfile() {
         playClickSound();
@@ -2771,6 +2784,39 @@ function renderGarageShip() {
         const modalConfirmBtn = document.querySelector('.modal-confirm-btn, #modal-action-btn');
         if (modalConfirmBtn) modalConfirmBtn.innerText = 'Обменять';
     }, 50);
+}
+    // Функция для вывода всплывающих уведомлений на экран
+function showNotification(text) {
+    const notif = document.createElement('div');
+    notif.innerText = text;
+    notif.style.position = 'fixed';
+    notif.style.bottom = '80px';
+    notif.style.left = '50%';
+    notif.style.transform = 'translateX(-50%)';
+    notif.style.background = 'rgba(139, 92, 246, 0.95)';
+    notif.style.color = '#fff';
+    notif.style.padding = '8px 16px';
+    notif.style.borderRadius = '12px';
+    notif.style.fontWeight = '700';
+    notif.style.fontSize = '12px';
+    notif.style.zIndex = '99999';
+    notif.style.boxShadow = '0 4px 14px rgba(0,0,0,0.4)';
+    notif.style.transition = 'opacity 0.3s ease';
+    document.body.appendChild(notif);
+
+    setTimeout(() => {
+        notif.style.opacity = '0';
+    }, 1500);
+
+    setTimeout(() => {
+        notif.remove();
+    }, 1800);
+}
+
+// Универсальное обновление балансов звезд и энергии
+function updateUserBalances() {
+    updateBalanceUI(); // Обновляет звезды в шапке
+    updateGarageCurrencyUI(); // Обновляет энергию и скрап в гараже
 }
 </script>
 </body>
