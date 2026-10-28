@@ -2650,6 +2650,55 @@ function setAppAvatar(url) {
         }
     });
 }
+    let scrapMetal = 0;
+let energy = 100;
+let garageLevel = 1;
+
+function onGarageShipClick(event) {
+    playClickSound();
+    scrapMetal += 5; // Добавляем 5 скрапа
+    updateGarageCurrencyUI();
+
+    // Создаем красивую всплывающую анимацию "+5 ⚙️" в месте клика
+    const x = event.clientX || (event.touches ? event.touches[0].clientX : 150);
+    const y = event.clientY || (event.touches ? event.touches[0].clientY : 250);
+
+    const floatText = document.createElement('div');
+    floatText.innerText = '+5 ⚙️';
+    floatText.style.position = 'fixed';
+    floatText.style.left = `${x}px`;
+    floatText.style.top = `${y}px`;
+    floatText.style.color = '#38bdf8';
+    floatText.style.fontWeight = '900';
+    floatText.style.fontSize = '18px';
+    floatText.style.pointerEvents = 'none';
+    floatText.style.transition = 'all 0.8s ease-out';
+    floatText.style.zIndex = '9999';
+    document.body.appendChild(floatText);
+
+    setTimeout(() => {
+        floatText.style.transform = 'translateY(-50px)';
+        floatText.style.opacity = '0';
+    }, 10);
+
+    setTimeout(() => {
+        floatText.remove();
+    }, 800);
+}
+
+function updateGarageCurrencyUI() {
+    const scrapEl = document.getElementById('user-scrap');
+    if (scrapEl) scrapEl.innerText = scrapMetal;
+    const energyEl = document.getElementById('user-energy');
+    if (energyEl) energyEl.innerText = energy;
+}
+
+function renderGarageShip() {
+    const imgEl = document.getElementById('garage-ship-img');
+    const titleEl = document.getElementById('garage-ship-title');
+    if (imgEl) imgEl.src = `ЛВЛ${garageLevel}.jpg`;
+    if (titleEl) titleEl.innerText = `Корабль: Уровень ${garageLevel}`;
+}
 </script>
 </body>
 </html>
