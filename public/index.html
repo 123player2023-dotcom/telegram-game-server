@@ -2048,7 +2048,22 @@ window.addEventListener('click', (e) => {
             }, 3700);
             return;
         }
-
+async function saveGarageProgress() {
+    try {
+        await fetch(`/api/update-garage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                telegramId: userId, 
+                scrapMetal: scrapMetal, 
+                energy: energy, 
+                garageLevel: garageLevel 
+            })
+        });
+    } catch (e) {
+        console.warn('Не удалось синхронизировать прогресс гаража:', e);
+    }
+}
         if (activeScreen === 'screen-duel') {
             let inputVal = myChosenBet;
             const spinBtnEl = document.getElementById('duel-spin-btn');
