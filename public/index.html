@@ -2732,13 +2732,14 @@ function buyEnergyPackage(energyAmount, costInStars) {
         showNotification(`Успешно куплено: +${energyAmount} ⚡!`);
         
         // Закрываем модальное окно после покупки
-        const modalEl = document.getElementById('modal-overlay'); // или ваш класс модалки
+        const modalEl = document.getElementById('modal-overlay');
         if (modalEl) modalEl.style.display = 'none';
     } else {
         showNotification('Недостаточно звезд!');
     }
 }
-    let scrapMetal = 0;
+
+let scrapMetal = 0;
 let energy = 100;
 let garageLevel = 1;
 
@@ -2773,8 +2774,7 @@ function onGarageShipClick(event) {
     setTimeout(() => {
         floatText.remove();
     }, 800);
-}
-}
+} // <--- ОДНА правильная закрывающая скобка на всю функцию!
 
 function updateGarageCurrencyUI() {
     const scrapEl = document.getElementById('user-scrap');
