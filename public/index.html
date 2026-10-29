@@ -1493,17 +1493,6 @@ window.addEventListener('click', (e) => {
         if (activeBtn) activeBtn.classList.add('active');
     }
 
-    function loadSavedTheme() {
-        const savedTheme = localStorage.getItem('tg_game_theme') || 'theme-dark';
-        document.documentElement.className = savedTheme;
-        document.body.className = savedTheme;
-        
-        document.querySelectorAll('.theme-option').forEach(el => el.classList.remove('active'));
-        const activeBtn = document.getElementById('theme-btn-' + savedTheme);
-        if (activeBtn) activeBtn.classList.add('active');
-    }
-
-    // Синхронизация данных с сервером (включая аватарку из Telegram)
     async function syncWithServer() {
     try {
         const response = await fetch(`/api/login`, {
@@ -1521,11 +1510,17 @@ window.addEventListener('click', (e) => {
             inventory = data.inventory || [];
             lastFreeCaseTime = data.lastFreeCaseTime || 0;
             
+            // Синхронизируем данные гаража из базы (если они там есть)
+            if (data.scrapMetal !== undefined) scrapMetal = data.scrapMetal;
+            if (data.energy !== undefined) energy = data.energy;
+            if (data.garageLevel !== undefined) garageLevel = data.garageLevel;
+            
             updateBalanceUI();
+            updateGarageCurrencyUI();
+            renderGarageShip();
             renderInventory();
             checkFreeCooldownUI();
 
-            // Применяем аватарку из базы (или ТГ / дефолтную, если в базе пусто)
             const fallbackTg = telegramUser?.photo_url || '';
             setAppAvatar(data.avatarUrl || fallbackTg);
         }
