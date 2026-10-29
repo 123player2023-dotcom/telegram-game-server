@@ -267,23 +267,37 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/update-garage', async (req, res) => {
     try {
         const { telegramId, scrapMetal, energy, garageLevel } = req.body;
+        if (!telegramId) return res.status(400).json({ success: false, error: 'No telegramId' });
+
+        const tIdStr = String(telegramId);
         
-        await UserModel.findOneAndUpdate(
-            { telegramId: String(telegramId) },
+        const updatedUser = await UserModel.findOneAndUpdate(
+            { telegramId: tIdStr },
             { 
-                scrapMetal: scrapMetal, 
-                energy: energy, 
-                garageLevel: garageLevel 
-            }
+                $set: {
+                    scrapMetal: Number(scrapMetal) || 0, 
+                    energy: Number(energy) || 0, 
+                    garageLevel: Number(garageLevel) || 1 
+                }
+            },
+            { new: true }
         );
 
-        res.json({ success: true });
+        if (!updatedUser) {
+            return res.status(404).json({ success: false, error: 'User not found' });
+        }
+
+        res.json({ 
+            success: true, 
+            scrapMetal: updatedUser.scrapMetal, 
+            energy: updatedUser.energy, 
+            garageLevel: updatedUser.garageLevel 
+        });
     } catch (e) {
         console.error('Ошибка сохранения гаража:', e);
         res.status(500).json({ success: false, error: 'Ошибка сервера' });
     }
 });
-
 app.post('/api/open-case', async (req, res) => {
     try {
         const { telegramId, mode } = req.body;
