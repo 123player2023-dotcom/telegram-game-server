@@ -2728,6 +2728,7 @@ function buyEnergyPackage(energyAmount, costInStars) {
         energy += energyAmount;
         updateUserBalances();
         updateGarageCurrencyUI();
+        saveGarageProgress();
         showNotification(`Успешно куплено: +${energyAmount} ⚡!`);
         
         // Закрываем модальное окно после покупки
@@ -2745,6 +2746,7 @@ function onGarageShipClick(event) {
     playClickSound();
     scrapMetal += 5; // Добавляем 5 скрапа
     updateGarageCurrencyUI();
+    saveGarageProgress(); // <--- Отправляем прогресс на сервер
 
     // Создаем красивую всплывающую анимацию "+5 ⚙️" в месте клика
     const x = event.clientX || (event.touches ? event.touches[0].clientX : 150);
@@ -2772,6 +2774,7 @@ function onGarageShipClick(event) {
         floatText.remove();
     }, 800);
 }
+}
 
 function updateGarageCurrencyUI() {
     const scrapEl = document.getElementById('user-scrap');
@@ -2794,6 +2797,7 @@ function renderGarageShip() {
             userStars += 1;
             updateUserBalances();
             updateGarageCurrencyUI();
+            saveGarageProgress();
             showNotification('Успешный обмен! +1 ⭐');
         } else {
             showNotification('Нужно минимум 1000 ⚙️ скрапа!');
