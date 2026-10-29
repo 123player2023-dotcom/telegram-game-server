@@ -2614,20 +2614,24 @@ async function saveGarageProgress() {
     }
     // Универсальная функция для одновременного обновления аватара в шапке и профиле
 function setAppAvatar(url) {
-    const defaultFallback = '/default-avatar.jpg';
+    const defaultFallback = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24" fill="%23a855f7"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>';
     const finalUrl = url && url.trim() !== '' ? url : defaultFallback;
 
-    // 1. Обновляем аватарку в шапке (красный круг)
+    // 1. Обновляем аватарку в шапке (строго круглый)
     const headerAvatar = document.getElementById('header-user-avatar');
     if (headerAvatar) {
         headerAvatar.src = finalUrl;
+        headerAvatar.style.borderRadius = '50%';
+        headerAvatar.style.objectFit = 'cover';
         headerAvatar.style.display = 'block';
     }
 
-    // 2. Обновляем аватарку в профиле (основной круг)
+    // 2. Обновляем аватарку в профиле (строго круглый)
     const profileAvatar = document.getElementById('user-avatar');
     if (profileAvatar) {
         profileAvatar.src = finalUrl;
+        profileAvatar.style.borderRadius = '50%';
+        profileAvatar.style.objectFit = 'cover';
     }
 }
     function uploadCustomAvatar(event) {
