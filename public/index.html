@@ -2945,6 +2945,7 @@ function upgradeGarageShip(targetLvl, payType) {
     updateUserBalances();
     renderGarageShip();
     closeModal();
+    saveGarageProgress();
     showNotification(`Корабль успешно улучшен до ${garageLevel} уровня! 🎉`);
 }
 </script>
