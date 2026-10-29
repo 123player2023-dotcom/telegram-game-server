@@ -310,6 +310,27 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
+// Эндпоинт для сохранения прогресса гаража
+app.post('/api/update-garage', async (req, res) => {
+    try {
+        const { telegramId, scrapMetal, energy, garageLevel } = req.body;
+        
+        // Пример для базы данных (например, Mongoose / MongoDB):
+        await User.findOneAndUpdate(
+            { telegramId: telegramId },
+            { 
+                scrapMetal: scrapMetal, 
+                energy: energy, 
+                garageLevel: garageLevel 
+            }
+        );
+
+        res.json({ success: true });
+    } catch (e) {
+        console.error('Ошибка сохранения гаража:', e);
+        res.status(500).json({ success: false, error: 'Ошибка сервера' });
+    }
+});
 app.post('/api/open-case', async (req, res) => {
     try {
         const { telegramId, mode } = req.body;
