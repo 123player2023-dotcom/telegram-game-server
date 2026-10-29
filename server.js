@@ -15,7 +15,7 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json());
 
-// Исправлено: раздача статики из папки public (теперь аудио, видео, картинки и index.html будут доступны)
+// Раздача статики из папки public
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/', (req, res) => {
@@ -38,7 +38,7 @@ let UserSchema = new mongoose.Schema({
     inventory: { type: Array, default: [] },
     lastFreeCaseTime: { type: Number, default: 0 },
     paidCaseCount: { type: Number, default: 0 },
-    // Новые поля для режима "Гараж"
+    // Поля для режима "Гараж"
     scrapMetal: { type: Number, default: 0 },
     energy: { type: Number, default: 100 },
     garageLevel: { type: Number, default: 1 },
@@ -77,7 +77,6 @@ bot.start(async (ctx) => {
 
 🎁  **Твой первый подарок уже ждет!** Нажми кнопку ниже, чтобы забрать стартовый бонус и сделать первый запуск!`;
 
-        // Указываем прямую ссылку на вашу картинку из папки public
         await ctx.replyWithPhoto('https://telegram-game-server.onrender.com/welcome.jpg', {
             caption: welcomeText,
             parse_mode: 'Markdown',
@@ -198,6 +197,7 @@ function getFreeRandomItem() {
     return giftsData[3];
 }
 
+// Единый и чистый эндпоинт авторизации с поддержкой гаража
 app.post('/api/login', async (req, res) => {
     try {
         const { telegramId, username, avatarUrl } = req.body;
@@ -207,7 +207,6 @@ app.post('/api/login', async (req, res) => {
         let user = await UserModel.findOne({ telegramId: tIdStr });
         
         if (!user) {
-            // Если пользователя нет — создаем с аватаркой из ТГ (если она есть)
             user = new UserModel({ 
                 telegramId: tIdStr, 
                 username: username || 'Игрок', 
@@ -215,44 +214,10 @@ app.post('/api/login', async (req, res) => {
                 stars: 0, 
                 inventory: [], 
                 lastFreeCaseTime: 0, 
-                paidCaseCount: 0 
-            });
-            await user.save();
-        } else {
-            let isUpdated = false;
-            if (username && user.username !== username) {
-                user.username = username;
-                isUpdated = true;
-            }
-            
-            // ВАЖНО: Записываем аватарку из ТГ только если у юзера в базе пусто. 
-            // Если пользователь уже загрузил кастомную — она никогда не перезапишется!
-            if (!user.avatarUrl && avatarUrl) {
-                user.avatarUrl = avatarUrl;
-                isUpdated = true;
-            }
-
-            if (isUpdated) {
-                await user.save();
-            }
-        }
-        app.post('/api/login', async (req, res) => {
-    try {
-        const { telegramId, username, avatarUrl } = req.body;
-        if (!telegramId) return res.status(400).json({ error: 'No telegramId' });
-
-        const tIdStr = String(telegramId);
-        let user = await UserModel.findOne({ telegramId: tIdStr });
-        
-        if (!user) {
-            user = new UserModel({ 
-                telegramId: tIdStr, 
-                username: username || 'Игрок', 
-                avatarUrl: avatarUrl || '', 
-                stars: 0, 
-                inventory: [], 
-                lastFreeCaseTime: 0, 
-                paidCaseCount: 0 
+                paidCaseCount: 0,
+                scrapMetal: 0,
+                energy: 100,
+                garageLevel: 1
             });
             await user.save();
         } else {
@@ -270,7 +235,7 @@ app.post('/api/login', async (req, res) => {
             }
         }
         
-        // --- ВОТ ЭТОТ НОВЫЙ КУСОК ПРО ЕЖЕДНЕВНУЮ ЭНЕРГИЮ ВСТАВЛЯЕМ СЮДА ---
+        // Логика ежедневного сброса/восстановления энергии
         const now = Date.now();
         const dayMs = 24 * 60 * 60 * 1000;
         if (!user.lastEnergyReset) {
@@ -283,27 +248,15 @@ app.post('/api/login', async (req, res) => {
             user.lastEnergyReset = now;
             await user.save();
         }
-        // -------------------------------------------------------------
 
         res.json({ 
             stars: user.stars, 
             inventory: user.inventory, 
             lastFreeCaseTime: user.lastFreeCaseTime,
             avatarUrl: user.avatarUrl,
-            // --- И ДОБАВЛЯЕМ ЭТИ ТРИ ПОЛЯ В ОТПРАВКУ КЛИЕНТУ ---
-            scrapMetal: user.scrapMetal,
-            energy: user.energy,
-            garageLevel: user.garageLevel
-        });
-    } catch (e) {
-        res.status(500).json({ error: e.message });
-    }
-});
-        res.json({ 
-            stars: user.stars, 
-            inventory: user.inventory, 
-            lastFreeCaseTime: user.lastFreeCaseTime,
-            avatarUrl: user.avatarUrl 
+            scrapMetal: user.scrapMetal || 0,
+            energy: user.energy !== undefined ? user.energy : 100,
+            garageLevel: user.garageLevel || 1
         });
     } catch (e) {
         res.status(500).json({ error: e.message });
@@ -315,9 +268,8 @@ app.post('/api/update-garage', async (req, res) => {
     try {
         const { telegramId, scrapMetal, energy, garageLevel } = req.body;
         
-        // Пример для базы данных (например, Mongoose / MongoDB):
-        await User.findOneAndUpdate(
-            { telegramId: telegramId },
+        await UserModel.findOneAndUpdate(
+            { telegramId: String(telegramId) },
             { 
                 scrapMetal: scrapMetal, 
                 energy: energy, 
@@ -331,6 +283,7 @@ app.post('/api/update-garage', async (req, res) => {
         res.status(500).json({ success: false, error: 'Ошибка сервера' });
     }
 });
+
 app.post('/api/open-case', async (req, res) => {
     try {
         const { telegramId, mode } = req.body;
